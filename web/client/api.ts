@@ -1,8 +1,10 @@
 import type { Skill } from '../../src/lib/types.js'
 import type { McpServer } from '../../src/lib/mcpTypes.js'
+import type { Hook } from '../../src/lib/hookTypes.js'
 
 export type { Skill }
 export type { McpServer }
+export type { Hook }
 
 async function apiFetch(method: string, path: string): Promise<Response> {
   const res = await fetch(path, { method })
@@ -55,4 +57,21 @@ export async function disableMcp(id: string): Promise<void> {
 
 export async function deleteMcp(id: string): Promise<void> {
   await apiFetch('DELETE', `/api/mcps/${encodeURIComponent(id)}`)
+}
+
+export async function fetchHooks(): Promise<Hook[]> {
+  const res = await apiFetch('GET', '/api/hooks')
+  return res.json() as Promise<Hook[]>
+}
+
+export async function enableHook(id: string): Promise<void> {
+  await apiFetch('PATCH', `/api/hooks/${encodeURIComponent(id)}/enable`)
+}
+
+export async function disableHook(id: string): Promise<void> {
+  await apiFetch('PATCH', `/api/hooks/${encodeURIComponent(id)}/disable`)
+}
+
+export async function deleteHook(id: string): Promise<void> {
+  await apiFetch('DELETE', `/api/hooks/${encodeURIComponent(id)}`)
 }
