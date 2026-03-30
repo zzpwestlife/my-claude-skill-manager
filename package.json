@@ -1,9 +1,9 @@
 {
-  "name": "skill-manager",
+  "name": "claude-manager",
   "version": "1.0.0",
   "type": "module",
   "bin": {
-    "skill-manager": "./bin/skill-manager.js"
+    "claude-manager": "./bin/claude-manager.js"
   },
   "scripts": {
     "start": "tsx src/index.tsx",

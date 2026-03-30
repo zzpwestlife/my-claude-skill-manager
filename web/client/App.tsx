@@ -239,7 +239,7 @@ export default function App() {
     // pb-24: leaves room so BulkActionBar doesn't overlap last skill row
     <div className="min-h-screen bg-gray-900 p-8 pb-24">
       <div className="mb-6 flex items-center gap-6">
-        <h1 className="text-2xl font-bold text-white">🔧 Skill Manager</h1>
+        <h1 className="text-2xl font-bold text-white">🔧 Claude Manager</h1>
         <div className="flex gap-1 rounded-lg bg-gray-800 p-1">
           <button
             onClick={() => setCurrentTab('skills')}

@@ -9,7 +9,7 @@ import { createApp } from './app.js'
 const PORT = parseInt(process.env.PORT ?? '3000', 10)
 
 // Accept optional project directory as first CLI argument:
-//   skill-manager /path/to/my-project
+//   claude-manager /path/to/my-project
 // Falls back to cwd if not provided.
 const projectArg = process.argv[2]
 const projectRoot = projectArg ? resolve(projectArg) : process.cwd()
@@ -36,7 +36,7 @@ if (existsSync(distDir)) {
 
 app.listen(PORT, () => {
   const url = `http://localhost:${PORT}`
-  console.log(`Skill Manager running at ${url}`)
+  console.log(`Claude Manager running at ${url}`)
   console.log(`  User skills:    ${userSkillsDir}`)
   console.log(`  Project root:   ${projectRoot}${existsSync(projectSkillsDir) ? '' : '  (no .claude/skills found)'}`)
   console.log(`  User MCP:       ${userMcpFile}`)

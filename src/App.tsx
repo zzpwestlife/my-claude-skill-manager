@@ -94,7 +94,7 @@ export function App() {
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="cyan" minWidth={60}>
       <Box paddingX={2} paddingTop={1}>
-        <Text bold color="cyan"> Skill Manager </Text>
+        <Text bold color="cyan"> Claude Manager </Text>
       </Box>
 
       <SkillList
