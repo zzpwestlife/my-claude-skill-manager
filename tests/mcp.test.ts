@@ -87,6 +87,23 @@ describe('scanMcps', () => {
     expect(result).toEqual([])
   })
 
+  it('handles HTTP-type server with no command field', async () => {
+    await writeFile(userFile, JSON.stringify({
+      mcpServers: {
+        refdoc: { type: 'http', url: 'https://example.com/mcp' },
+      },
+    }))
+    const result = await scanMcps(userFile, null)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      name: 'refdoc',
+      type: 'http',
+      url: 'https://example.com/mcp',
+      enabled: true,
+    })
+    expect(result[0].command).toBeUndefined()
+  })
+
   it('preserves env and type fields', async () => {
     await writeFile(userFile, JSON.stringify({
       mcpServers: {

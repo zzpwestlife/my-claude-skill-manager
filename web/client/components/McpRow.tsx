@@ -11,6 +11,7 @@ interface Props {
 }
 
 function commandSummary(server: McpServer): string {
+  if (!server.command) return server.url ?? ''
   const parts = [server.command, ...(server.args ?? [])]
   const joined = parts.join(' ')
   return joined.length > 72 ? joined.slice(0, 69) + '…' : joined

@@ -17,7 +17,7 @@ const projectRoot = projectArg ? resolve(projectArg) : process.cwd()
 const userSkillsDir = join(homedir(), '.claude', 'skills')
 const projectSkillsDir = join(projectRoot, '.claude', 'skills')
 const pluginsDir = join(homedir(), '.claude', 'plugins')
-const userMcpFile = join(homedir(), '.claude', 'mcp.json')
+const userMcpFile = join(homedir(), '.claude.json')
 const projectMcpFile = join(projectRoot, '.claude', 'mcp.json')
 
 const app = createApp(userSkillsDir, projectSkillsDir, projectRoot, pluginsDir, userMcpFile, projectMcpFile)

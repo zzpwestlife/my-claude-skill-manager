@@ -51,6 +51,7 @@ function configToServer(
     args: cfg.args,
     env: cfg.env,
     type: cfg.type,
+    url: cfg.url,
     configFile,
   }
 }

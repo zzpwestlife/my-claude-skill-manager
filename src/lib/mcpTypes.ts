@@ -1,10 +1,11 @@
 export type McpScope = 'user' | 'project'
 
 export interface McpServerConfig {
-  command: string
+  command?: string
   args?: string[]
   env?: Record<string, string>
   type?: string
+  url?: string
 }
 
 export interface McpServer {
@@ -12,10 +13,11 @@ export interface McpServer {
   name: string         // key in mcpServers object
   scope: McpScope
   enabled: boolean     // true = in mcpServers, false = in _disabledMcpServers
-  command: string
+  command?: string
   args?: string[]
   env?: Record<string, string>
   type?: string
+  url?: string
   configFile: string   // absolute path to mcp.json
 }
 
