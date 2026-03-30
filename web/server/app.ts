@@ -101,6 +101,10 @@ export function createApp(
       const mcps = await scanMcps(userMcpFile, projectMcpFile ?? null)
       const mcp = mcps.find(m => m.id === id)
       if (!mcp) { res.status(404).json({ error: `MCP server not found: ${id}` }); return }
+      if (mcp.enabled) {
+        res.status(409).json({ error: `MCP server "${mcp.name}" is already enabled` })
+        return
+      }
       await enableMcp(mcp)
       res.json({ ok: true })
     } catch (err) {
@@ -115,6 +119,10 @@ export function createApp(
       const mcps = await scanMcps(userMcpFile, projectMcpFile ?? null)
       const mcp = mcps.find(m => m.id === id)
       if (!mcp) { res.status(404).json({ error: `MCP server not found: ${id}` }); return }
+      if (!mcp.enabled) {
+        res.status(409).json({ error: `MCP server "${mcp.name}" is already disabled` })
+        return
+      }
       await disableMcp(mcp)
       res.json({ ok: true })
     } catch (err) {

@@ -237,6 +237,15 @@ describe('MCP API routes', () => {
       const res = await request(app).patch('/api/mcps/user%3Anonexistent/enable')
       expect(res.status).toBe(404)
     })
+
+    it('returns 409 when server is already enabled', async () => {
+      await writeFile(mcpFile, JSON.stringify({
+        mcpServers: { alreadyon: { command: 'npx', args: [] } },
+      }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).patch('/api/mcps/user%3Aalreadyon/enable')
+      expect(res.status).toBe(409)
+    })
   })
 
   describe('PATCH /api/mcps/:id/disable', () => {
@@ -256,6 +265,15 @@ describe('MCP API routes', () => {
       const app = createApp('', null, undefined, undefined, mcpFile, null)
       const res = await request(app).patch('/api/mcps/user%3Anonexistent/disable')
       expect(res.status).toBe(404)
+    })
+
+    it('returns 409 when server is already disabled', async () => {
+      await writeFile(mcpFile, JSON.stringify({
+        _disabledMcpServers: { alreadyoff: { command: 'npx', args: [] } },
+      }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).patch('/api/mcps/user%3Aalreadyoff/disable')
+      expect(res.status).toBe(409)
     })
   })
 
