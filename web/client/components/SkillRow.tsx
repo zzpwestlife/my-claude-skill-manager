@@ -25,11 +25,13 @@ export default function SkillRow({ skill, onToggle, onDelete, deleteButtonRef }:
       <div className="flex shrink-0 items-center gap-3 ml-4">
         {/* Toggle switch */}
         <button
+          role="switch"
+          aria-checked={skill.enabled}
           onClick={onToggle}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 ${
             skill.enabled ? 'bg-green-500' : 'bg-gray-600'
           }`}
-          aria-label={skill.enabled ? 'Disable skill' : 'Enable skill'}
+          aria-label={skill.name}
         >
           <span
             className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${

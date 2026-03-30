@@ -11,6 +11,37 @@ export default function ConfirmModal({ skill, onConfirm, onCancel }: Props) {
   const cancelRef = useRef<HTMLButtonElement>(null)
   useEffect(() => { cancelRef.current?.focus() }, [])
 
+  const confirmRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onCancel()
+        return
+      }
+      if (e.key === 'Tab') {
+        // Focus trap: cycle between cancelRef and confirmRef
+        const focusable = [cancelRef.current, confirmRef.current].filter(Boolean) as HTMLButtonElement[]
+        if (focusable.length < 2) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onCancel])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
       <div
@@ -32,6 +63,7 @@ export default function ConfirmModal({ skill, onConfirm, onCancel }: Props) {
             Cancel
           </button>
           <button
+            ref={confirmRef}
             onClick={onConfirm}
             className="rounded bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
           >
