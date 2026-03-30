@@ -32,6 +32,10 @@ export default function App() {
     }
   }
 
+  // load is defined inline and intentionally omitted from deps:
+  // it's only called imperatively, and adding it would require useCallback
+  // wrapping with no behavioral benefit in this single-fetch pattern.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void load()
   }, [])
@@ -68,14 +72,16 @@ export default function App() {
     if (!confirmSkill) return
     const skill = confirmSkill
     setConfirmSkill(null)
-    // Return focus to the delete button that triggered the modal
-    setTimeout(() => {
-      deleteButtonRefs.current[skill.id]?.focus()
-    }, 0)
     try {
       await deleteSkill(skill.id)
+      // Clean up stale ref after successful deletion
+      delete deleteButtonRefs.current[skill.id]
       await load()
     } catch (err) {
+      // On failure, skill still exists — return focus to its delete button
+      setTimeout(() => {
+        deleteButtonRefs.current[skill.id]?.focus()
+      }, 0)
       showRowError(skill.id, String(err))
     }
   }
