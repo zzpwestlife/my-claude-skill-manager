@@ -1,3 +1,5 @@
+import { enableHook, disableHook, deleteHook } from '../src/lib/hookActions.js'
+import { readFile } from 'node:fs/promises'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -125,5 +127,125 @@ describe('scanHooks', () => {
     await writeFile(userFile, 'NOT JSON')
     const result = await scanHooks(userFile, null)
     expect(result).toEqual([])
+  })
+})
+
+describe('Hook actions', () => {
+  let tmpRoot: string
+  let settingsFile: string
+
+  beforeEach(async () => {
+    tmpRoot = await mkdtemp(join(tmpdir(), 'sm-hook-actions-'))
+    settingsFile = join(tmpRoot, 'settings.json')
+  })
+
+  afterEach(async () => {
+    await rm(tmpRoot, { recursive: true, force: true })
+  })
+
+  function makeHook(overrides: Partial<import('../src/lib/hookTypes.js').Hook> = {}): import('../src/lib/hookTypes.js').Hook {
+    return {
+      id: 'user:PreToolUse:0:0',
+      scope: 'user',
+      event: 'PreToolUse',
+      matcher: 'Bash',
+      command: 'echo hi',
+      enabled: true,
+      configFile: settingsFile,
+      matcherIndex: 0,
+      hookIndex: 0,
+      ...overrides,
+    }
+  }
+
+  it('disableHook adds disabled:true to the hook entry', async () => {
+    await writeFile(settingsFile, JSON.stringify({
+      hooks: {
+        PreToolUse: [
+          { matcher: 'Bash', hooks: [{ type: 'command', command: 'echo hi' }] },
+        ],
+      },
+    }))
+    await disableHook(makeHook())
+    const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+    expect(json.hooks.PreToolUse[0].hooks[0].disabled).toBe(true)
+  })
+
+  it('enableHook removes disabled field from hook entry', async () => {
+    await writeFile(settingsFile, JSON.stringify({
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: 'Bash',
+            hooks: [{ type: 'command', command: 'echo hi', disabled: true }],
+          },
+        ],
+      },
+    }))
+    await enableHook(makeHook({ enabled: false }))
+    const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+    expect(json.hooks.PreToolUse[0].hooks[0].disabled).toBeUndefined()
+  })
+
+  it('deleteHook removes the hook entry — empty hooks array cleans up matcher and event', async () => {
+    await writeFile(settingsFile, JSON.stringify({
+      hooks: {
+        PreToolUse: [
+          { matcher: 'Bash', hooks: [{ type: 'command', command: 'echo hi' }] },
+        ],
+      },
+    }))
+    await deleteHook(makeHook())
+    const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+    expect(json.hooks?.PreToolUse).toBeUndefined()
+  })
+
+  it('deleteHook removes only the targeted hook when multiple exist', async () => {
+    await writeFile(settingsFile, JSON.stringify({
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: 'Bash',
+            hooks: [
+              { type: 'command', command: 'echo first' },
+              { type: 'command', command: 'echo second' },
+            ],
+          },
+        ],
+      },
+    }))
+    await deleteHook(makeHook({ hookIndex: 0 }))
+    const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+    expect(json.hooks.PreToolUse[0].hooks).toHaveLength(1)
+    expect(json.hooks.PreToolUse[0].hooks[0].command).toBe('echo second')
+  })
+
+  it('deleteHook removes matcher entry when its hooks array becomes empty', async () => {
+    await writeFile(settingsFile, JSON.stringify({
+      hooks: {
+        PreToolUse: [
+          { matcher: 'Bash', hooks: [{ command: 'echo a' }] },
+          { matcher: 'Edit', hooks: [{ command: 'echo b' }] },
+        ],
+      },
+    }))
+    await deleteHook(makeHook({ matcherIndex: 0, hookIndex: 0 }))
+    const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+    expect(json.hooks.PreToolUse).toHaveLength(1)
+    expect(json.hooks.PreToolUse[0].matcher).toBe('Edit')
+  })
+
+  it('actions preserve other keys in settings.json', async () => {
+    await writeFile(settingsFile, JSON.stringify({
+      permissions: ['allow-bash'],
+      hooks: {
+        PreToolUse: [
+          { matcher: 'Bash', hooks: [{ command: 'echo hi' }] },
+        ],
+      },
+    }))
+    await disableHook(makeHook())
+    const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+    expect(json.permissions).toEqual(['allow-bash'])
   })
 })
