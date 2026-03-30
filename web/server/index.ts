@@ -17,8 +17,10 @@ const projectRoot = projectArg ? resolve(projectArg) : process.cwd()
 const userSkillsDir = join(homedir(), '.claude', 'skills')
 const projectSkillsDir = join(projectRoot, '.claude', 'skills')
 const pluginsDir = join(homedir(), '.claude', 'plugins')
+const userMcpFile = join(homedir(), '.claude', 'mcp.json')
+const projectMcpFile = join(projectRoot, '.claude', 'mcp.json')
 
-const app = createApp(userSkillsDir, projectSkillsDir, projectRoot, pluginsDir)
+const app = createApp(userSkillsDir, projectSkillsDir, projectRoot, pluginsDir, userMcpFile, projectMcpFile)
 
 // Serve built frontend in production (when dist/web/ exists)
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -37,6 +39,7 @@ app.listen(PORT, () => {
   console.log(`Skill Manager running at ${url}`)
   console.log(`  User skills:    ${userSkillsDir}`)
   console.log(`  Project root:   ${projectRoot}${existsSync(projectSkillsDir) ? '' : '  (no .claude/skills found)'}`)
+  console.log(`  User MCP:       ${userMcpFile}`)
   // Only auto-open when running as main web server (not as API-only in dev mode)
   if (!process.env.PORT) {
     void open(url)

@@ -5,6 +5,8 @@ import { join } from 'node:path'
 import { scanMcps } from '../src/lib/mcpScanner.js'
 import { enableMcp, disableMcp, deleteMcp } from '../src/lib/mcpActions.js'
 import { readFile } from 'node:fs/promises'
+import request from 'supertest'
+import { createApp } from '../web/server/app.js'
 
 describe('scanMcps', () => {
   let tmpRoot: string
@@ -180,5 +182,100 @@ describe('MCP actions', () => {
     const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
     expect(json.someOtherKey).toBe('preserved')
     expect(json.mcpServers).toHaveProperty('other')
+  })
+})
+
+describe('MCP API routes', () => {
+  let tmpRoot: string
+  let mcpFile: string
+
+  beforeEach(async () => {
+    tmpRoot = await mkdtemp(join(tmpdir(), 'sm-mcp-api-'))
+    mcpFile = join(tmpRoot, 'mcp.json')
+  })
+
+  afterEach(async () => {
+    await rm(tmpRoot, { recursive: true, force: true })
+  })
+
+  describe('GET /api/mcps', () => {
+    it('returns empty array when file does not exist', async () => {
+      const app = createApp('', null, undefined, undefined, '/nonexistent/mcp.json', null)
+      const res = await request(app).get('/api/mcps')
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual([])
+    })
+
+    it('returns servers from mcp.json', async () => {
+      await writeFile(mcpFile, JSON.stringify({
+        mcpServers: { filesystem: { command: 'npx', args: ['-y', '@mcp/fs'] } },
+      }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).get('/api/mcps')
+      expect(res.status).toBe(200)
+      expect(res.body).toHaveLength(1)
+      expect(res.body[0]).toMatchObject({ name: 'filesystem', enabled: true })
+    })
+  })
+
+  describe('PATCH /api/mcps/:id/enable', () => {
+    it('enables a disabled server', async () => {
+      await writeFile(mcpFile, JSON.stringify({
+        _disabledMcpServers: { memory: { command: 'npx', args: [] } },
+      }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).patch('/api/mcps/user%3Amemory/enable')
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ ok: true })
+      const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+      expect(json.mcpServers).toHaveProperty('memory')
+    })
+
+    it('returns 404 when server not found', async () => {
+      await writeFile(mcpFile, JSON.stringify({ mcpServers: {} }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).patch('/api/mcps/user%3Anonexistent/enable')
+      expect(res.status).toBe(404)
+    })
+  })
+
+  describe('PATCH /api/mcps/:id/disable', () => {
+    it('disables an enabled server', async () => {
+      await writeFile(mcpFile, JSON.stringify({
+        mcpServers: { filesystem: { command: 'npx', args: [] } },
+      }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).patch('/api/mcps/user%3Afilesystem/disable')
+      expect(res.status).toBe(200)
+      const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+      expect(json._disabledMcpServers).toHaveProperty('filesystem')
+    })
+
+    it('returns 404 when server not found', async () => {
+      await writeFile(mcpFile, JSON.stringify({ mcpServers: {} }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).patch('/api/mcps/user%3Anonexistent/disable')
+      expect(res.status).toBe(404)
+    })
+  })
+
+  describe('DELETE /api/mcps/:id', () => {
+    it('deletes an enabled server', async () => {
+      await writeFile(mcpFile, JSON.stringify({
+        mcpServers: { todelete: { command: 'node', args: [] } },
+      }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).delete('/api/mcps/user%3Atodelete')
+      expect(res.status).toBe(200)
+      const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+      expect(json.mcpServers ?? {}).not.toHaveProperty('todelete')
+    })
+
+    it('returns 404 when server not found', async () => {
+      await writeFile(mcpFile, JSON.stringify({ mcpServers: {} }))
+      const app = createApp('', null, undefined, undefined, mcpFile, null)
+      const res = await request(app).delete('/api/mcps/user%3Anonexistent')
+      expect(res.status).toBe(404)
+    })
   })
 })
