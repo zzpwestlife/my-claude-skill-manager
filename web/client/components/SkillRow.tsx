@@ -6,13 +6,26 @@ interface Props {
   onToggle: () => void
   onDelete: () => void
   deleteButtonRef?: RefCallback<HTMLButtonElement>
+  isSelected?: boolean
+  onSelect?: () => void
 }
 
-export default function SkillRow({ skill, onToggle, onDelete, deleteButtonRef }: Props) {
+export default function SkillRow({ skill, onToggle, onDelete, deleteButtonRef, isSelected = false, onSelect = () => {} }: Props) {
   return (
     <div className="flex items-center justify-between rounded-lg px-4 py-3 hover:bg-gray-800">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="truncate font-mono text-sm text-white">
+        {/* Selection checkbox */}
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onSelect}
+          aria-label={`Select ${skill.name}`}
+          className="h-4 w-4 shrink-0 cursor-pointer accent-blue-500"
+        />
+        <span
+          title={skill.description}
+          className="truncate font-mono text-sm text-white"
+        >
           {skill.name}
         </span>
         <span className="shrink-0 rounded bg-gray-700 px-2 py-0.5 text-xs text-gray-300">
