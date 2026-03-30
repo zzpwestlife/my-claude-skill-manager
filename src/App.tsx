@@ -19,6 +19,7 @@ export function App() {
   const [confirmSkill, setConfirmSkill] = useState<Skill | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [isWorking, setIsWorking] = useState(false)
 
   const loadSkills = useCallback(async () => {
     const found = await scanSkills(USER_SKILLS_DIR, PROJECT_SKILLS_DIR)
@@ -36,6 +37,8 @@ export function App() {
   useInput(async (input, key) => {
     if (confirmSkill) {
       if (input === 'y') {
+        if (isWorking) return
+        setIsWorking(true)
         try {
           await deleteSkill(confirmSkill)
           setConfirmSkill(null)
@@ -44,6 +47,8 @@ export function App() {
         } catch (e) {
           showError(`Delete failed: ${(e as Error).message}`)
           setConfirmSkill(null)
+        } finally {
+          setIsWorking(false)
         }
       } else {
         setConfirmSkill(null)
@@ -54,10 +59,12 @@ export function App() {
     if (key.upArrow) {
       setSelectedIndex(prev => Math.max(0, prev - 1))
     } else if (key.downArrow) {
-      setSelectedIndex(prev => Math.min(skills.length - 1, prev + 1))
+      setSelectedIndex(prev => (skills.length === 0 ? 0 : Math.min(skills.length - 1, prev + 1)))
     } else if (input === ' ') {
+      if (isWorking) return
       const skill = skills[selectedIndex]
       if (!skill) return
+      setIsWorking(true)
       try {
         if (skill.enabled) {
           await disableSkill(skill)
@@ -67,6 +74,8 @@ export function App() {
         await loadSkills()
       } catch (e) {
         showError(`Toggle failed: ${(e as Error).message}`)
+      } finally {
+        setIsWorking(false)
       }
     } else if (input === 'd') {
       const skill = skills[selectedIndex]
