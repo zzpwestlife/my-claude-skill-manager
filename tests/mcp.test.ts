@@ -82,4 +82,23 @@ describe('scanMcps', () => {
     const result = await scanMcps(userFile, null)
     expect(result).toEqual([])
   })
+
+  it('preserves env and type fields', async () => {
+    await writeFile(userFile, JSON.stringify({
+      mcpServers: {
+        'api-server': {
+          command: 'node',
+          args: ['server.js'],
+          env: { API_KEY: 'secret123' },
+          type: 'stdio',
+        },
+      },
+    }))
+    const result = await scanMcps(userFile, null)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      env: { API_KEY: 'secret123' },
+      type: 'stdio',
+    })
+  })
 })

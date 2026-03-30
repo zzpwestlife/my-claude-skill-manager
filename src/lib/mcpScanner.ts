@@ -15,16 +15,21 @@ function parseServers(
   scope: McpScope,
   configFile: string,
 ): McpServer[] {
+  const enabledMap = json.mcpServers ?? {}
+  const disabledMap = json._disabledMcpServers ?? {}
+
   const servers: McpServer[] = []
 
-  const enabled = json.mcpServers ?? {}
-  for (const [name, cfg] of Object.entries(enabled)) {
+  // Add enabled servers
+  for (const [name, cfg] of Object.entries(enabledMap)) {
     servers.push(configToServer(name, cfg, scope, true, configFile))
   }
 
-  const disabled = json._disabledMcpServers ?? {}
-  for (const [name, cfg] of Object.entries(disabled)) {
-    servers.push(configToServer(name, cfg, scope, false, configFile))
+  // Add disabled servers only if not already in enabled (dedup: enabled wins)
+  for (const [name, cfg] of Object.entries(disabledMap)) {
+    if (!(name in enabledMap)) {
+      servers.push(configToServer(name, cfg, scope, false, configFile))
+    }
   }
 
   return servers.sort((a, b) => a.name.localeCompare(b.name))
