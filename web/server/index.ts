@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { existsSync } from 'node:fs'
 import open from 'open'
+import express from 'express'
 import { createApp } from './app.js'
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10)
@@ -17,7 +18,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const distDir = join(__dirname, '../../dist/web')
 
 if (existsSync(distDir)) {
-  const { default: express } = await import('express')
   app.use(express.static(distDir))
   // SPA fallback: serve index.html for any non-API route
   app.get('*', (_req, res) => {

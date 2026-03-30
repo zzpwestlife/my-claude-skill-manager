@@ -78,6 +78,13 @@ describe('Express server', () => {
       expect(files).toContain('SKILL.md.disabled')
       expect(files).not.toContain('SKILL.md')
     })
+
+    it('returns 404 when skill not found', async () => {
+      const app = createApp(userDir, null)
+      const res = await request(app).patch('/api/skills/user%3Anonexistent/disable')
+      expect(res.status).toBe(404)
+      expect(res.body).toHaveProperty('error')
+    })
   })
 
   describe('DELETE /api/skills/:id', () => {
