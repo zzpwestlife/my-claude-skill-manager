@@ -3,6 +3,8 @@ import { scanSkills } from '../../src/lib/scanner.js'
 import { enableSkill, disableSkill, deleteSkill } from '../../src/lib/actions.js'
 import { scanMcps } from '../../src/lib/mcpScanner.js'
 import { enableMcp, disableMcp, deleteMcp } from '../../src/lib/mcpActions.js'
+import { scanHooks } from '../../src/lib/hookScanner.js'
+import { enableHook, disableHook, deleteHook } from '../../src/lib/hookActions.js'
 
 export function createApp(
   userSkillsDir: string,
@@ -11,6 +13,8 @@ export function createApp(
   pluginsDir?: string,
   userMcpFile?: string,
   projectMcpFile?: string | null,
+  userSettingsFile?: string,
+  projectSettingsFile?: string | null,
 ) {
   const app = express()
 
@@ -138,6 +142,68 @@ export function createApp(
       const mcp = mcps.find(m => m.id === id)
       if (!mcp) { res.status(404).json({ error: `MCP server not found: ${id}` }); return }
       await deleteMcp(mcp)
+      res.json({ ok: true })
+    } catch (err) {
+      res.status(500).json({ error: String(err) })
+    }
+  })
+
+  // ── Hook routes ─────────────────────────────────────────────────────────────
+
+  app.get('/api/hooks', async (_req, res) => {
+    if (!userSettingsFile) { res.json([]); return }
+    try {
+      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      res.json(hooks)
+    } catch (err) {
+      res.status(500).json({ error: String(err) })
+    }
+  })
+
+  app.patch('/api/hooks/:id/enable', async (req, res) => {
+    if (!userSettingsFile) { res.status(404).json({ error: 'No settings file' }); return }
+    const id = req.params.id
+    try {
+      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      const hook = hooks.find(h => h.id === id)
+      if (!hook) { res.status(404).json({ error: `Hook not found: ${id}` }); return }
+      if (hook.enabled) {
+        res.status(409).json({ error: 'Hook is already enabled' })
+        return
+      }
+      await enableHook(hook)
+      res.json({ ok: true })
+    } catch (err) {
+      res.status(500).json({ error: String(err) })
+    }
+  })
+
+  app.patch('/api/hooks/:id/disable', async (req, res) => {
+    if (!userSettingsFile) { res.status(404).json({ error: 'No settings file' }); return }
+    const id = req.params.id
+    try {
+      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      const hook = hooks.find(h => h.id === id)
+      if (!hook) { res.status(404).json({ error: `Hook not found: ${id}` }); return }
+      if (!hook.enabled) {
+        res.status(409).json({ error: 'Hook is already disabled' })
+        return
+      }
+      await disableHook(hook)
+      res.json({ ok: true })
+    } catch (err) {
+      res.status(500).json({ error: String(err) })
+    }
+  })
+
+  app.delete('/api/hooks/:id', async (req, res) => {
+    if (!userSettingsFile) { res.status(404).json({ error: 'No settings file' }); return }
+    const id = req.params.id
+    try {
+      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      const hook = hooks.find(h => h.id === id)
+      if (!hook) { res.status(404).json({ error: `Hook not found: ${id}` }); return }
+      await deleteHook(hook)
       res.json({ ok: true })
     } catch (err) {
       res.status(500).json({ error: String(err) })

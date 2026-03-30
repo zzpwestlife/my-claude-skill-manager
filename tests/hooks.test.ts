@@ -5,6 +5,8 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { scanHooks } from '../src/lib/hookScanner.js'
+import request from 'supertest'
+import { createApp } from '../web/server/app.js'
 
 describe('scanHooks', () => {
   let tmpRoot: string
@@ -247,5 +249,127 @@ describe('Hook actions', () => {
     await disableHook(makeHook())
     const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
     expect(json.permissions).toEqual(['allow-bash'])
+  })
+})
+
+describe('Hooks API routes', () => {
+  let tmpRoot: string
+  let settingsFile: string
+
+  beforeEach(async () => {
+    tmpRoot = await mkdtemp(join(tmpdir(), 'sm-hook-api-'))
+    settingsFile = join(tmpRoot, 'settings.json')
+  })
+
+  afterEach(async () => {
+    await rm(tmpRoot, { recursive: true, force: true })
+  })
+
+  describe('GET /api/hooks', () => {
+    it('returns empty array when settings file does not exist', async () => {
+      const app = createApp('', null, undefined, undefined, undefined, null, '/nonexistent/settings.json', null)
+      const res = await request(app).get('/api/hooks')
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual([])
+    })
+
+    it('returns hooks from settings.json', async () => {
+      await writeFile(settingsFile, JSON.stringify({
+        hooks: {
+          Stop: [{ hooks: [{ type: 'command', command: 'echo done' }] }],
+        },
+      }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).get('/api/hooks')
+      expect(res.status).toBe(200)
+      expect(res.body).toHaveLength(1)
+      expect(res.body[0]).toMatchObject({ event: 'Stop', command: 'echo done', enabled: true })
+    })
+  })
+
+  describe('PATCH /api/hooks/:id/disable', () => {
+    it('disables an enabled hook', async () => {
+      await writeFile(settingsFile, JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            { matcher: 'Bash', hooks: [{ type: 'command', command: 'echo hi' }] },
+          ],
+        },
+      }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).patch('/api/hooks/user%3APreToolUse%3A0%3A0/disable')
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ ok: true })
+      const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+      expect(json.hooks.PreToolUse[0].hooks[0].disabled).toBe(true)
+    })
+
+    it('returns 404 when hook not found', async () => {
+      await writeFile(settingsFile, JSON.stringify({ hooks: {} }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).patch('/api/hooks/user%3APreToolUse%3A0%3A0/disable')
+      expect(res.status).toBe(404)
+    })
+
+    it('returns 409 when hook is already disabled', async () => {
+      await writeFile(settingsFile, JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            { matcher: 'Bash', hooks: [{ command: 'echo hi', disabled: true }] },
+          ],
+        },
+      }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).patch('/api/hooks/user%3APreToolUse%3A0%3A0/disable')
+      expect(res.status).toBe(409)
+    })
+  })
+
+  describe('PATCH /api/hooks/:id/enable', () => {
+    it('enables a disabled hook', async () => {
+      await writeFile(settingsFile, JSON.stringify({
+        hooks: {
+          Stop: [{ hooks: [{ command: 'echo hi', disabled: true }] }],
+        },
+      }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).patch('/api/hooks/user%3AStop%3A0%3A0/enable')
+      expect(res.status).toBe(200)
+      const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+      expect(json.hooks.Stop[0].hooks[0].disabled).toBeUndefined()
+    })
+
+    it('returns 409 when hook is already enabled', async () => {
+      await writeFile(settingsFile, JSON.stringify({
+        hooks: {
+          Stop: [{ hooks: [{ command: 'echo hi' }] }],
+        },
+      }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).patch('/api/hooks/user%3AStop%3A0%3A0/enable')
+      expect(res.status).toBe(409)
+    })
+  })
+
+  describe('DELETE /api/hooks/:id', () => {
+    it('deletes a hook', async () => {
+      await writeFile(settingsFile, JSON.stringify({
+        hooks: {
+          Stop: [{ hooks: [{ command: 'echo bye' }] }],
+        },
+      }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).delete('/api/hooks/user%3AStop%3A0%3A0')
+      expect(res.status).toBe(200)
+      const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
+      expect(json.hooks?.Stop).toBeUndefined()
+    })
+
+    it('returns 404 when hook not found', async () => {
+      await writeFile(settingsFile, JSON.stringify({ hooks: {} }))
+      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const res = await request(app).delete('/api/hooks/user%3AStop%3A9%3A9')
+      expect(res.status).toBe(404)
+    })
   })
 })
