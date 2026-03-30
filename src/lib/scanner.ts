@@ -38,7 +38,7 @@ async function readSkillDescription(dir: string): Promise<string | undefined> {
     const m = lines[i].match(/^description:\s*(.*)$/)
     if (!m) continue
     const val = m[1].trim()
-    if (val === '|' || val === '>') {
+    if (val.startsWith('|') || val.startsWith('>')) {
       // Block scalar: return first non-empty indented line
       for (let j = i + 1; j < lines.length; j++) {
         const trimmed = lines[j].trim()

@@ -67,6 +67,55 @@ describe('Express server', () => {
       expect(res.status).toBe(200)
       expect(res.body[0].description).toBeUndefined()
     })
+
+    it('includes first line of block scalar description (|) from SKILL.md frontmatter', async () => {
+      const skillDir = join(userDir, 'block-skill')
+      await mkdir(skillDir)
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        '---\nname: block-skill\ndescription: |\n  First line of block scalar.\n  Second line.\n---\n',
+      )
+      const app = createApp(userDir, null)
+      const res = await request(app).get('/api/skills')
+      expect(res.status).toBe(200)
+      expect(res.body[0]).toMatchObject({
+        name: 'block-skill',
+        description: 'First line of block scalar.',
+      })
+    })
+
+    it('includes first line of block scalar description (>) from SKILL.md frontmatter', async () => {
+      const skillDir = join(userDir, 'folded-skill')
+      await mkdir(skillDir)
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        '---\nname: folded-skill\ndescription: >\n  Folded description line.\n---\n',
+      )
+      const app = createApp(userDir, null)
+      const res = await request(app).get('/api/skills')
+      expect(res.status).toBe(200)
+      expect(res.body[0]).toMatchObject({
+        name: 'folded-skill',
+        description: 'Folded description line.',
+      })
+    })
+
+    it('includes description from SKILL.md.disabled for a disabled skill', async () => {
+      const skillDir = join(userDir, 'disabled-described')
+      await mkdir(skillDir)
+      await writeFile(
+        join(skillDir, 'SKILL.md.disabled'),
+        '---\nname: disabled-described\ndescription: A disabled skill description.\n---\n',
+      )
+      const app = createApp(userDir, null)
+      const res = await request(app).get('/api/skills')
+      expect(res.status).toBe(200)
+      expect(res.body[0]).toMatchObject({
+        name: 'disabled-described',
+        description: 'A disabled skill description.',
+        enabled: false,
+      })
+    })
   })
 
   describe('PATCH /api/skills/:id/enable', () => {
