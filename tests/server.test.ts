@@ -41,6 +41,32 @@ describe('Express server', () => {
         scope: 'user',
       })
     })
+
+    it('includes description from SKILL.md frontmatter', async () => {
+      const skillDir = join(userDir, 'described-skill')
+      await mkdir(skillDir)
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        '---\nname: described-skill\ndescription: A test skill for testing.\n---\n\n# Body',
+      )
+      const app = createApp(userDir, null)
+      const res = await request(app).get('/api/skills')
+      expect(res.status).toBe(200)
+      expect(res.body[0]).toMatchObject({
+        name: 'described-skill',
+        description: 'A test skill for testing.',
+      })
+    })
+
+    it('omits description when SKILL.md has no frontmatter', async () => {
+      const skillDir = join(userDir, 'plain-skill')
+      await mkdir(skillDir)
+      await writeFile(join(skillDir, 'SKILL.md'), '# No frontmatter here')
+      const app = createApp(userDir, null)
+      const res = await request(app).get('/api/skills')
+      expect(res.status).toBe(200)
+      expect(res.body[0].description).toBeUndefined()
+    })
   })
 
   describe('PATCH /api/skills/:id/enable', () => {

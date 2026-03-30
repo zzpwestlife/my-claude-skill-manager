@@ -1,4 +1,4 @@
-import { readdir, stat, realpath } from 'node:fs/promises'
+import { readdir, readFile, stat, realpath } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
 import { join } from 'node:path'
 import type { Skill, SkillScope } from './types.js'
@@ -15,6 +15,40 @@ async function getEnabledState(dir: string): Promise<boolean | null> {
   if (await pathExists(join(dir, 'SKILL.md'))) return true
   if (await pathExists(join(dir, 'SKILL.md.disabled'))) return false
   return null
+}
+
+async function readSkillDescription(dir: string): Promise<string | undefined> {
+  let content: string
+  try {
+    content = await readFile(join(dir, 'SKILL.md'), 'utf-8')
+  } catch {
+    try {
+      content = await readFile(join(dir, 'SKILL.md.disabled'), 'utf-8')
+    } catch {
+      return undefined
+    }
+  }
+
+  // Extract YAML frontmatter between first --- pair
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+  if (!fmMatch) return undefined
+  const lines = fmMatch[1].split('\n')
+
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^description:\s*(.*)$/)
+    if (!m) continue
+    const val = m[1].trim()
+    if (val === '|' || val === '>') {
+      // Block scalar: return first non-empty indented line
+      for (let j = i + 1; j < lines.length; j++) {
+        const trimmed = lines[j].trim()
+        if (trimmed) return trimmed
+      }
+      return undefined
+    }
+    return val || undefined
+  }
+  return undefined
 }
 
 async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
@@ -46,6 +80,7 @@ async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
 
     if (enabledState !== null) {
       // Standalone skill
+      const description = await readSkillDescription(realDir)
       skills.push({
         id: `${scope}:${entry.name}`,
         name: entry.name,
@@ -53,6 +88,7 @@ async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
         enabled: enabledState,
         path: entryPath,
         isSymlink,
+        description,
       })
     } else {
       // Check if it's a plugin folder with child skills
@@ -69,6 +105,7 @@ async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
         const childState = await getEnabledState(childPath)
         if (childState !== null) {
           const skillName = `${entry.name}/${child.name}`
+          const description = await readSkillDescription(childPath)
           skills.push({
             id: `${scope}:${skillName}`,
             name: skillName,
@@ -77,6 +114,7 @@ async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
             enabled: childState,
             path: childPath,
             isSymlink: false,
+            description,
           })
         }
       }

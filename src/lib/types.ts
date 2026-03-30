@@ -8,4 +8,5 @@ export type Skill = {
   enabled: boolean     // true = SKILL.md exists, false = SKILL.md.disabled exists
   path: string         // absolute path to the skill directory
   isSymlink: boolean   // true if the ~/.claude/skills/ entry is a symlink
+  description?: string // first line of SKILL.md frontmatter description, if present
 }
