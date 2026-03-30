@@ -1,12 +1,14 @@
 import type { Skill } from '../../../src/lib/types.js'
+import type { RefCallback } from 'react'
 
 interface Props {
   skill: Skill
   onToggle: () => void
   onDelete: () => void
+  deleteButtonRef?: RefCallback<HTMLButtonElement>
 }
 
-export default function SkillRow({ skill, onToggle, onDelete }: Props) {
+export default function SkillRow({ skill, onToggle, onDelete, deleteButtonRef }: Props) {
   return (
     <div className="flex items-center justify-between rounded-lg px-4 py-3 hover:bg-gray-800">
       <div className="flex items-center gap-3 min-w-0">
@@ -37,6 +39,7 @@ export default function SkillRow({ skill, onToggle, onDelete }: Props) {
         </button>
         {/* Delete button */}
         <button
+          ref={deleteButtonRef}
           onClick={onDelete}
           className="text-gray-500 transition-colors hover:text-red-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 focus-visible:ring-offset-gray-900 rounded"
           aria-label="Delete skill"
