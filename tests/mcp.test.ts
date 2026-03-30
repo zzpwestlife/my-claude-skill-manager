@@ -3,6 +3,8 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { scanMcps } from '../src/lib/mcpScanner.js'
+import { enableMcp, disableMcp, deleteMcp } from '../src/lib/mcpActions.js'
+import { readFile } from 'node:fs/promises'
 
 describe('scanMcps', () => {
   let tmpRoot: string
@@ -100,5 +102,83 @@ describe('scanMcps', () => {
       env: { API_KEY: 'secret123' },
       type: 'stdio',
     })
+  })
+})
+
+describe('MCP actions', () => {
+  let tmpRoot: string
+  let mcpFile: string
+
+  beforeEach(async () => {
+    tmpRoot = await mkdtemp(join(tmpdir(), 'sm-mcp-actions-'))
+    mcpFile = join(tmpRoot, 'mcp.json')
+  })
+
+  afterEach(async () => {
+    await rm(tmpRoot, { recursive: true, force: true })
+  })
+
+  function makeServer(name: string, enabled: boolean): import('../src/lib/mcpTypes.js').McpServer {
+    return {
+      id: `user:${name}`,
+      name,
+      scope: 'user',
+      enabled,
+      command: 'npx',
+      args: [],
+      configFile: mcpFile,
+    }
+  }
+
+  it('enableMcp moves server from _disabledMcpServers to mcpServers', async () => {
+    await writeFile(mcpFile, JSON.stringify({
+      mcpServers: {},
+      _disabledMcpServers: { memory: { command: 'npx', args: [] } },
+    }))
+    await enableMcp(makeServer('memory', false))
+    const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+    expect(json.mcpServers).toHaveProperty('memory')
+    expect(json._disabledMcpServers).not.toHaveProperty('memory')
+  })
+
+  it('disableMcp moves server from mcpServers to _disabledMcpServers', async () => {
+    await writeFile(mcpFile, JSON.stringify({
+      mcpServers: { filesystem: { command: 'npx', args: ['-y', '@mcp/fs'] } },
+    }))
+    await disableMcp(makeServer('filesystem', true))
+    const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+    expect(json.mcpServers).not.toHaveProperty('filesystem')
+    expect(json._disabledMcpServers).toHaveProperty('filesystem')
+    expect(json._disabledMcpServers.filesystem.command).toBe('npx')
+  })
+
+  it('deleteMcp removes an enabled server', async () => {
+    await writeFile(mcpFile, JSON.stringify({
+      mcpServers: { todelete: { command: 'node', args: [] } },
+    }))
+    await deleteMcp(makeServer('todelete', true))
+    const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+    expect(json.mcpServers).not.toHaveProperty('todelete')
+  })
+
+  it('deleteMcp removes a disabled server', async () => {
+    await writeFile(mcpFile, JSON.stringify({
+      _disabledMcpServers: { todelete: { command: 'node', args: [] } },
+    }))
+    await deleteMcp(makeServer('todelete', false))
+    const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+    expect(json._disabledMcpServers ?? {}).not.toHaveProperty('todelete')
+  })
+
+  it('enableMcp preserves other keys in the JSON file', async () => {
+    await writeFile(mcpFile, JSON.stringify({
+      mcpServers: { other: { command: 'node', args: [] } },
+      _disabledMcpServers: { memory: { command: 'npx', args: [] } },
+      someOtherKey: 'preserved',
+    }))
+    await enableMcp(makeServer('memory', false))
+    const json = JSON.parse(await readFile(mcpFile, 'utf-8'))
+    expect(json.someOtherKey).toBe('preserved')
+    expect(json.mcpServers).toHaveProperty('other')
   })
 })
