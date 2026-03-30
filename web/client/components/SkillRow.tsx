@@ -24,7 +24,7 @@ export default function SkillRow({ skill, onToggle, onDelete }: Props) {
         {/* Toggle switch */}
         <button
           onClick={onToggle}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 ${
             skill.enabled ? 'bg-green-500' : 'bg-gray-600'
           }`}
           aria-label={skill.enabled ? 'Disable skill' : 'Enable skill'}
@@ -38,7 +38,7 @@ export default function SkillRow({ skill, onToggle, onDelete }: Props) {
         {/* Delete button */}
         <button
           onClick={onDelete}
-          className="text-gray-500 transition-colors hover:text-red-400 focus:outline-none"
+          className="text-gray-500 transition-colors hover:text-red-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 focus-visible:ring-offset-gray-900 rounded"
           aria-label="Delete skill"
         >
           <svg
@@ -46,6 +46,7 @@ export default function SkillRow({ skill, onToggle, onDelete }: Props) {
             className="h-4 w-4"
             viewBox="0 0 20 20"
             fill="currentColor"
+            aria-hidden="true"
           >
             <path
               fillRule="evenodd"

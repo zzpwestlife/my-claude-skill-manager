@@ -12,6 +12,7 @@ export default function SearchBar({ value, onChange }: Props) {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
+          aria-hidden="true"
         >
           <path
             fillRule="evenodd"
@@ -25,6 +26,7 @@ export default function SearchBar({ value, onChange }: Props) {
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder="Search skills..."
+        aria-label="Search skills"
         className="w-full rounded-lg border border-gray-700 bg-gray-800 py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
       />
     </div>
