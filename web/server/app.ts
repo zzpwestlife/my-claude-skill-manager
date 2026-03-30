@@ -5,14 +5,20 @@ import { enableSkill, disableSkill, deleteSkill } from '../../src/lib/actions.js
 export function createApp(
   userSkillsDir: string,
   projectSkillsDir: string | null,
+  projectRoot?: string,
+  pluginsDir?: string,
 ) {
   const app = express()
 
   app.use(express.json())
 
+  app.get('/api/config', (_req, res) => {
+    res.json({ projectRoot: projectRoot ?? null, projectSkillsDir })
+  })
+
   app.get('/api/skills', async (_req, res) => {
     try {
-      const skills = await scanSkills(userSkillsDir, projectSkillsDir)
+      const skills = await scanSkills(userSkillsDir, projectSkillsDir, pluginsDir)
       res.json(skills)
     } catch (err) {
       res.status(500).json({ error: String(err) })
@@ -23,7 +29,7 @@ export function createApp(
     // Express auto-decodes req.params.id: "user%3Apua%2Fmama" → "user:pua/mama"
     const id = req.params.id
     try {
-      const skills = await scanSkills(userSkillsDir, projectSkillsDir)
+      const skills = await scanSkills(userSkillsDir, projectSkillsDir, pluginsDir)
       const skill = skills.find(s => s.id === id)
       if (!skill) {
         res.status(404).json({ error: `Skill not found: ${id}` })
@@ -39,7 +45,7 @@ export function createApp(
   app.patch('/api/skills/:id/disable', async (req, res) => {
     const id = req.params.id
     try {
-      const skills = await scanSkills(userSkillsDir, projectSkillsDir)
+      const skills = await scanSkills(userSkillsDir, projectSkillsDir, pluginsDir)
       const skill = skills.find(s => s.id === id)
       if (!skill) {
         res.status(404).json({ error: `Skill not found: ${id}` })
@@ -55,10 +61,14 @@ export function createApp(
   app.delete('/api/skills/:id', async (req, res) => {
     const id = req.params.id
     try {
-      const skills = await scanSkills(userSkillsDir, projectSkillsDir)
+      const skills = await scanSkills(userSkillsDir, projectSkillsDir, pluginsDir)
       const skill = skills.find(s => s.id === id)
       if (!skill) {
         res.status(404).json({ error: `Skill not found: ${id}` })
+        return
+      }
+      if (skill.scope === 'plugin') {
+        res.status(403).json({ error: 'Plugin skills cannot be deleted here. Use the plugin manager to uninstall the plugin.' })
         return
       }
       await deleteSkill(skill)

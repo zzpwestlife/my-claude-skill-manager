@@ -1,4 +1,4 @@
-import { join, dirname } from 'node:path'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { existsSync } from 'node:fs'
@@ -8,10 +8,17 @@ import { createApp } from './app.js'
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10)
 
-const userSkillsDir = join(homedir(), '.claude', 'skills')
-const projectSkillsDir = join(process.cwd(), '.claude', 'skills')
+// Accept optional project directory as first CLI argument:
+//   skill-manager /path/to/my-project
+// Falls back to cwd if not provided.
+const projectArg = process.argv[2]
+const projectRoot = projectArg ? resolve(projectArg) : process.cwd()
 
-const app = createApp(userSkillsDir, projectSkillsDir)
+const userSkillsDir = join(homedir(), '.claude', 'skills')
+const projectSkillsDir = join(projectRoot, '.claude', 'skills')
+const pluginsDir = join(homedir(), '.claude', 'plugins')
+
+const app = createApp(userSkillsDir, projectSkillsDir, projectRoot, pluginsDir)
 
 // Serve built frontend in production (when dist/web/ exists)
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -28,6 +35,8 @@ if (existsSync(distDir)) {
 app.listen(PORT, () => {
   const url = `http://localhost:${PORT}`
   console.log(`Skill Manager running at ${url}`)
+  console.log(`  User skills:    ${userSkillsDir}`)
+  console.log(`  Project root:   ${projectRoot}${existsSync(projectSkillsDir) ? '' : '  (no .claude/skills found)'}`)
   // Only auto-open when running as main web server (not as API-only in dev mode)
   if (!process.env.PORT) {
     void open(url)

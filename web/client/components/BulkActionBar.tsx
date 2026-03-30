@@ -3,14 +3,16 @@ import type { Skill } from '../../../src/lib/types.js'
 interface Props {
   count: number
   selectedSkills: Skill[]
+  onEnable: () => void
   onDisable: () => void
   onDelete: () => void
   onClear: () => void
 }
 
-export default function BulkActionBar({ count, selectedSkills, onDisable, onDelete, onClear }: Props) {
+export default function BulkActionBar({ count, selectedSkills, onEnable, onDisable, onDelete, onClear }: Props) {
   if (count === 0) return null
 
+  const allEnabled = selectedSkills.every(s => s.enabled)
   const allDisabled = selectedSkills.every(s => !s.enabled)
 
   return (
@@ -19,6 +21,13 @@ export default function BulkActionBar({ count, selectedSkills, onDisable, onDele
         {count} selected
       </span>
       <div className="flex items-center gap-3">
+        <button
+          onClick={onEnable}
+          disabled={allEnabled}
+          className="rounded bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800"
+        >
+          Enable
+        </button>
         <button
           onClick={onDisable}
           disabled={allDisabled}

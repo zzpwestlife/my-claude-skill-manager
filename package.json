@@ -2,6 +2,9 @@
   "name": "skill-manager",
   "version": "1.0.0",
   "type": "module",
+  "bin": {
+    "skill-manager": "./bin/skill-manager.js"
+  },
   "scripts": {
     "start": "tsx src/index.tsx",
     "test": "vitest run",

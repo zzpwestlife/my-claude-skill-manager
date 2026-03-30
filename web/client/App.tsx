@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import type { Skill } from '../../src/lib/types.js'
 import {
   fetchSkills,
+  fetchConfig,
   enableSkill,
   disableSkill,
   deleteSkill,
 } from './api.js'
+import type { Config } from './api.js'
 import SearchBar from './components/SearchBar.js'
 import SectionHeader from './components/SectionHeader.js'
 import SkillRow from './components/SkillRow.js'
@@ -14,6 +16,7 @@ import BulkActionBar from './components/BulkActionBar.js'
 
 export default function App() {
   const [skills, setSkills] = useState<Skill[]>([])
+  const [config, setConfig] = useState<Config | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -21,13 +24,23 @@ export default function App() {
   const [confirmBulk, setConfirmBulk] = useState<Skill[] | null>(null)
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({})
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  function handleToggleCollapse(section: string) {
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      next.has(section) ? next.delete(section) : next.add(section)
+      return next
+    })
+  }
   const deleteButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   async function load() {
     try {
       setError(null)
-      const data = await fetchSkills()
+      const [data, cfg] = await Promise.all([fetchSkills(), fetchConfig()])
       setSkills(data)
+      setConfig(cfg)
     } catch (err) {
       setError(String(err))
     } finally {
@@ -134,6 +147,18 @@ export default function App() {
 
   // ── Bulk handlers ─────────────────────────────────────────────────────────
 
+  async function handleBulkEnable() {
+    const toEnable = skills.filter(s => selected.has(s.id) && !s.enabled)
+    const results = await Promise.allSettled(toEnable.map(s => enableSkill(s.id)))
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        showRowError(toEnable[i].id, String(result.reason))
+      }
+    })
+    setSelected(new Set())
+    await load()
+  }
+
   async function handleBulkDisable() {
     const toDisable = skills.filter(s => selected.has(s.id) && s.enabled)
     const results = await Promise.allSettled(toDisable.map(s => disableSkill(s.id)))
@@ -176,6 +201,7 @@ export default function App() {
   )
   const userSkills = filtered.filter(s => s.scope === 'user')
   const projectSkills = filtered.filter(s => s.scope === 'project')
+  const pluginSkills = filtered.filter(s => s.scope === 'plugin')
   // selectedSkills from full skills list (not filtered) so bulk bar stays accurate while searching
   const selectedSkills = skills.filter(s => selected.has(s.id))
 
@@ -216,66 +242,109 @@ export default function App() {
       <div className="mb-8">
         <SectionHeader
           title="USER SKILLS"
-          count={userSkills.length}
           skills={userSkills}
           selected={selected}
           onSelectSection={handleSelectSection}
+          collapsed={collapsed.has('user')}
+          onToggleCollapse={() => handleToggleCollapse('user')}
         />
-        {userSkills.length === 0 ? (
-          <p className="italic text-gray-500">(none found)</p>
-        ) : (
-          <div className="space-y-1">
-            {userSkills.map(skill => (
-              <div key={skill.id}>
-                <SkillRow
-                  skill={skill}
-                  onToggle={() => void handleToggle(skill)}
-                  onDelete={() => handleDelete(skill)}
-                  deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
-                  isSelected={selected.has(skill.id)}
-                  onSelect={() => handleSelect(skill.id)}
-                />
-                {rowErrors[skill.id] && (
-                  <p className="px-4 text-xs text-red-400" role="alert">
-                    {rowErrors[skill.id]}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+        {!collapsed.has('user') && (
+          userSkills.length === 0 ? (
+            <p className="italic text-gray-500">(none found)</p>
+          ) : (
+            <div className="space-y-1">
+              {userSkills.map(skill => (
+                <div key={skill.id}>
+                  <SkillRow
+                    skill={skill}
+                    onToggle={() => void handleToggle(skill)}
+                    onDelete={() => handleDelete(skill)}
+                    deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                    isSelected={selected.has(skill.id)}
+                    onSelect={() => handleSelect(skill.id)}
+                  />
+                  {rowErrors[skill.id] && (
+                    <p className="px-4 text-xs text-red-400" role="alert">
+                      {rowErrors[skill.id]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
       <div>
         <SectionHeader
           title="PROJECT SKILLS"
-          count={projectSkills.length}
           skills={projectSkills}
           selected={selected}
           onSelectSection={handleSelectSection}
+          hint={config?.projectRoot ?? undefined}
+          collapsed={collapsed.has('project')}
+          onToggleCollapse={() => handleToggleCollapse('project')}
         />
-        {projectSkills.length === 0 ? (
-          <p className="italic text-gray-500">(none found)</p>
-        ) : (
-          <div className="space-y-1">
-            {projectSkills.map(skill => (
-              <div key={skill.id}>
-                <SkillRow
-                  skill={skill}
-                  onToggle={() => void handleToggle(skill)}
-                  onDelete={() => handleDelete(skill)}
-                  deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
-                  isSelected={selected.has(skill.id)}
-                  onSelect={() => handleSelect(skill.id)}
-                />
-                {rowErrors[skill.id] && (
-                  <p className="px-4 text-xs text-red-400" role="alert">
-                    {rowErrors[skill.id]}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+        {!collapsed.has('project') && (
+          projectSkills.length === 0 ? (
+            <p className="italic text-gray-500">(none found)</p>
+          ) : (
+            <div className="space-y-1">
+              {projectSkills.map(skill => (
+                <div key={skill.id}>
+                  <SkillRow
+                    skill={skill}
+                    onToggle={() => void handleToggle(skill)}
+                    onDelete={() => handleDelete(skill)}
+                    deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                    isSelected={selected.has(skill.id)}
+                    onSelect={() => handleSelect(skill.id)}
+                  />
+                  {rowErrors[skill.id] && (
+                    <p className="px-4 text-xs text-red-400" role="alert">
+                      {rowErrors[skill.id]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        )}
+      </div>
+
+      <div className="mt-8">
+        <SectionHeader
+          title="PLUGIN SKILLS"
+          skills={pluginSkills}
+          selected={selected}
+          onSelectSection={handleSelectSection}
+          collapsed={collapsed.has('plugin')}
+          onToggleCollapse={() => handleToggleCollapse('plugin')}
+        />
+        {!collapsed.has('plugin') && (
+          pluginSkills.length === 0 ? (
+            <p className="italic text-gray-500">(none found)</p>
+          ) : (
+            <div className="space-y-1">
+              {pluginSkills.map(skill => (
+                <div key={skill.id}>
+                  <SkillRow
+                    skill={skill}
+                    onToggle={() => void handleToggle(skill)}
+                    onDelete={() => handleDelete(skill)}
+                    deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                    isSelected={selected.has(skill.id)}
+                    onSelect={() => handleSelect(skill.id)}
+                  />
+                  {rowErrors[skill.id] && (
+                    <p className="px-4 text-xs text-red-400" role="alert">
+                      {rowErrors[skill.id]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
@@ -300,6 +369,7 @@ export default function App() {
       <BulkActionBar
         count={selectedSkills.length}
         selectedSkills={selectedSkills}
+        onEnable={() => void handleBulkEnable()}
         onDisable={() => void handleBulkDisable()}
         onDelete={handleBulkDelete}
         onClear={handleClearSelection}

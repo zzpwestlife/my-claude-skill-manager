@@ -11,6 +11,16 @@ async function apiFetch(method: string, path: string): Promise<Response> {
   return res
 }
 
+export interface Config {
+  projectRoot: string | null
+  projectSkillsDir: string | null
+}
+
+export async function fetchConfig(): Promise<Config> {
+  const res = await apiFetch('GET', '/api/config')
+  return res.json() as Promise<Config>
+}
+
 export async function fetchSkills(): Promise<Skill[]> {
   const res = await apiFetch('GET', '/api/skills')
   return res.json() as Promise<Skill[]>
