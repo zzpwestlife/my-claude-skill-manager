@@ -120,6 +120,23 @@ describe('scanSkills', () => {
     expect(skills[0].enabled).toBe(true)
   })
 
+  it('uses symlink path (not realpath) for plugin sub-skills under a symlinked folder', async () => {
+    const targetDir = join(tmpDir, 'real-plugin')
+    await mkdir(join(targetDir, 'sub-skill'), { recursive: true })
+    await writeFile(join(targetDir, 'sub-skill', 'SKILL.md'), '# sub')
+
+    const skillsDir = join(tmpDir, 'skills')
+    await mkdir(skillsDir)
+    const linkPath = join(skillsDir, 'linked-plugin')
+    await symlink(targetDir, linkPath)
+
+    const skills = await scanSkills(skillsDir, null)
+
+    expect(skills).toHaveLength(1)
+    expect(skills[0].name).toBe('linked-plugin/sub-skill')
+    expect(skills[0].path).toBe(join(linkPath, 'sub-skill'))  // symlink path, not realpath
+  })
+
   it('returns skills sorted by name within each scope', async () => {
     await mkdir(join(tmpDir, 'z-skill'))
     await mkdir(join(tmpDir, 'a-skill'))

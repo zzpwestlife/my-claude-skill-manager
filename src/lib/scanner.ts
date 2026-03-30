@@ -1,4 +1,5 @@
 import { readdir, stat, realpath } from 'node:fs/promises'
+import type { Dirent } from 'node:fs'
 import { join } from 'node:path'
 import type { Skill, SkillScope } from './types.js'
 
@@ -17,7 +18,7 @@ async function getEnabledState(dir: string): Promise<boolean | null> {
 }
 
 async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
-  let entries: Awaited<ReturnType<typeof readdir>>
+  let entries: Dirent[]
   try {
     entries = await readdir(dir, { withFileTypes: true })
   } catch {
@@ -55,7 +56,7 @@ async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
       })
     } else {
       // Check if it's a plugin folder with child skills
-      let children: Awaited<ReturnType<typeof readdir>>
+      let children: Dirent[]
       try {
         children = await readdir(realDir, { withFileTypes: true })
       } catch {
@@ -64,7 +65,7 @@ async function scanDirectory(dir: string, scope: SkillScope): Promise<Skill[]> {
 
       for (const child of children) {
         if (!child.isDirectory()) continue
-        const childPath = join(realDir, child.name)
+        const childPath = join(entryPath, child.name)
         const childState = await getEnabledState(childPath)
         if (childState !== null) {
           const skillName = `${entry.name}/${child.name}`
