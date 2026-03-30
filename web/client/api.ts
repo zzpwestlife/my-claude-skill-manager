@@ -37,3 +37,24 @@ export async function disableSkill(id: string): Promise<void> {
 export async function deleteSkill(id: string): Promise<void> {
   await apiFetch('DELETE', `/api/skills/${encodeURIComponent(id)}`)
 }
+
+import type { McpServer } from '../../src/lib/mcpTypes.js'
+
+export type { McpServer }
+
+export async function fetchMcps(): Promise<McpServer[]> {
+  const res = await apiFetch('GET', '/api/mcps')
+  return res.json() as Promise<McpServer[]>
+}
+
+export async function enableMcp(id: string): Promise<void> {
+  await apiFetch('PATCH', `/api/mcps/${encodeURIComponent(id)}/enable`)
+}
+
+export async function disableMcp(id: string): Promise<void> {
+  await apiFetch('PATCH', `/api/mcps/${encodeURIComponent(id)}/disable`)
+}
+
+export async function deleteMcp(id: string): Promise<void> {
+  await apiFetch('DELETE', `/api/mcps/${encodeURIComponent(id)}`)
+}

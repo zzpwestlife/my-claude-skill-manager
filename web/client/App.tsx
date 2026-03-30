@@ -13,6 +13,8 @@ import SectionHeader from './components/SectionHeader.js'
 import SkillRow from './components/SkillRow.js'
 import ConfirmModal from './components/ConfirmModal.js'
 import BulkActionBar from './components/BulkActionBar.js'
+import McpPage from './McpPage.js'
+import type { SelectableItem } from '../../src/lib/types.js'
 
 export default function App() {
   const [skills, setSkills] = useState<Skill[]>([])
@@ -25,6 +27,7 @@ export default function App() {
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({})
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [currentTab, setCurrentTab] = useState<'skills' | 'mcp'>('skills')
 
   function handleToggleCollapse(section: string) {
     setCollapsed(prev => {
@@ -128,7 +131,7 @@ export default function App() {
     })
   }
 
-  function handleSelectSection(sectionSkills: Skill[]) {
+  function handleSelectSection(sectionSkills: SelectableItem[]) {
     setSelected(prev => {
       const allSelected = sectionSkills.length > 0 && sectionSkills.every(s => prev.has(s.id))
       const next = new Set(prev)
@@ -235,9 +238,35 @@ export default function App() {
   return (
     // pb-24: leaves room so BulkActionBar doesn't overlap last skill row
     <div className="min-h-screen bg-gray-900 p-8 pb-24">
-      <h1 className="mb-6 text-2xl font-bold text-white">🔧 Skill Manager</h1>
+      <div className="mb-6 flex items-center gap-6">
+        <h1 className="text-2xl font-bold text-white">🔧 Skill Manager</h1>
+        <div className="flex gap-1 rounded-lg bg-gray-800 p-1">
+          <button
+            onClick={() => setCurrentTab('skills')}
+            className={`rounded px-4 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              currentTab === 'skills'
+                ? 'bg-gray-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Skills
+          </button>
+          <button
+            onClick={() => setCurrentTab('mcp')}
+            className={`rounded px-4 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              currentTab === 'mcp'
+                ? 'bg-gray-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            MCP
+          </button>
+        </div>
+      </div>
 
-      <SearchBar value={search} onChange={setSearch} />
+      {currentTab === 'skills' ? (
+        <>
+          <SearchBar value={search} onChange={setSearch} />
 
       <div className="mb-8">
         <SectionHeader
@@ -374,6 +403,10 @@ export default function App() {
         onDelete={handleBulkDelete}
         onClear={handleClearSelection}
       />
+        </>
+      ) : (
+        <McpPage />
+      )}
     </div>
   )
 }
