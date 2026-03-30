@@ -1,9 +1,9 @@
 import { useRef, useEffect } from 'react'
-import type { Skill } from '../../../src/lib/types.js'
+import type { SelectableItem } from '../../../src/lib/types.js'
 
 interface Props {
-  skill?: Skill
-  skills?: Skill[]
+  skill?: SelectableItem
+  skills?: SelectableItem[]
   onConfirm: () => void
   onCancel: () => void
 }
@@ -44,7 +44,7 @@ export default function ConfirmModal({ skill, skills, onConfirm, onCancel }: Pro
 
   const isBulk = Array.isArray(skills) && skills.length > 0
   const title = isBulk
-    ? `Delete ${skills!.length} skills?`
+    ? `Delete ${skills!.length} items?`
     : `Delete "${skill!.name}"?`
   const deleteLabel = isBulk ? `Delete ${skills!.length}` : 'Delete'
 

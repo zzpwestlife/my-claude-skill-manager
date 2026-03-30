@@ -1,11 +1,11 @@
 import { useRef, useEffect } from 'react'
-import type { Skill } from '../../../src/lib/types.js'
+import type { SelectableItem } from '../../../src/lib/types.js'
 
 interface Props {
   title: string
-  skills: Skill[]
+  skills: SelectableItem[]
   selected: Set<string>
-  onSelectSection: (skills: Skill[]) => void
+  onSelectSection: (skills: SelectableItem[]) => void
   hint?: string
   collapsed?: boolean
   onToggleCollapse?: () => void

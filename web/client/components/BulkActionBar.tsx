@@ -1,8 +1,8 @@
-import type { Skill } from '../../../src/lib/types.js'
+import type { SelectableItem } from '../../../src/lib/types.js'
 
 interface Props {
   count: number
-  selectedSkills: Skill[]
+  selectedSkills: SelectableItem[]
   onEnable: () => void
   onDisable: () => void
   onDelete: () => void

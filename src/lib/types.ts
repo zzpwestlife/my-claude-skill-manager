@@ -11,3 +11,9 @@ export type Skill = {
   isSymlink: boolean   // true if the ~/.claude/skills/ entry is a symlink
   description?: string // first line of SKILL.md frontmatter description, if present
 }
+
+export interface SelectableItem {
+  id: string
+  name: string
+  enabled: boolean
+}
