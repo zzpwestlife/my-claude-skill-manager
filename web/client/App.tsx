@@ -10,6 +10,7 @@ import SearchBar from './components/SearchBar.js'
 import SectionHeader from './components/SectionHeader.js'
 import SkillRow from './components/SkillRow.js'
 import ConfirmModal from './components/ConfirmModal.js'
+import BulkActionBar from './components/BulkActionBar.js'
 
 export default function App() {
   const [skills, setSkills] = useState<Skill[]>([])
@@ -17,7 +18,9 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [confirmSkill, setConfirmSkill] = useState<Skill | null>(null)
+  const [confirmBulk, setConfirmBulk] = useState<Skill[] | null>(null)
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({})
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const deleteButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   async function load() {
@@ -50,6 +53,8 @@ export default function App() {
       })
     }, 3000)
   }
+
+  // ── Single-skill handlers ─────────────────────────────────────────────────
 
   async function handleToggle(skill: Skill) {
     try {
@@ -96,11 +101,85 @@ export default function App() {
     }, 0)
   }
 
+  // ── Selection handlers ────────────────────────────────────────────────────
+
+  function handleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  function handleSelectSection(sectionSkills: Skill[]) {
+    setSelected(prev => {
+      const allSelected = sectionSkills.length > 0 && sectionSkills.every(s => prev.has(s.id))
+      const next = new Set(prev)
+      if (allSelected) {
+        sectionSkills.forEach(s => next.delete(s.id))
+      } else {
+        sectionSkills.forEach(s => next.add(s.id))
+      }
+      return next
+    })
+  }
+
+  function handleClearSelection() {
+    setSelected(new Set())
+  }
+
+  // ── Bulk handlers ─────────────────────────────────────────────────────────
+
+  async function handleBulkDisable() {
+    const toDisable = skills.filter(s => selected.has(s.id) && s.enabled)
+    const results = await Promise.allSettled(toDisable.map(s => disableSkill(s.id)))
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        showRowError(toDisable[i].id, String(result.reason))
+      }
+    })
+    setSelected(new Set())
+    await load()
+  }
+
+  function handleBulkDelete() {
+    const toDelete = skills.filter(s => selected.has(s.id))
+    setConfirmBulk(toDelete)
+  }
+
+  async function handleConfirmBulkDelete() {
+    if (!confirmBulk) return
+    const toDelete = confirmBulk
+    setConfirmBulk(null)
+    const results = await Promise.allSettled(toDelete.map(s => deleteSkill(s.id)))
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        showRowError(toDelete[i].id, String(result.reason))
+      }
+    })
+    setSelected(new Set())
+    await load()
+  }
+
+  function handleCancelBulkDelete() {
+    setConfirmBulk(null)
+  }
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+
   const filtered = skills.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()),
   )
   const userSkills = filtered.filter(s => s.scope === 'user')
   const projectSkills = filtered.filter(s => s.scope === 'project')
+  // selectedSkills from full skills list (not filtered) so bulk bar stays accurate while searching
+  const selectedSkills = skills.filter(s => selected.has(s.id))
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -128,13 +207,20 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-8">
+    // pb-24: leaves room so BulkActionBar doesn't overlap last skill row
+    <div className="min-h-screen bg-gray-900 p-8 pb-24">
       <h1 className="mb-6 text-2xl font-bold text-white">🔧 Skill Manager</h1>
 
       <SearchBar value={search} onChange={setSearch} />
 
       <div className="mb-8">
-        <SectionHeader title="USER SKILLS" count={userSkills.length} />
+        <SectionHeader
+          title="USER SKILLS"
+          count={userSkills.length}
+          skills={userSkills}
+          selected={selected}
+          onSelectSection={handleSelectSection}
+        />
         {userSkills.length === 0 ? (
           <p className="italic text-gray-500">(none found)</p>
         ) : (
@@ -146,6 +232,8 @@ export default function App() {
                   onToggle={() => void handleToggle(skill)}
                   onDelete={() => handleDelete(skill)}
                   deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                  isSelected={selected.has(skill.id)}
+                  onSelect={() => handleSelect(skill.id)}
                 />
                 {rowErrors[skill.id] && (
                   <p className="px-4 text-xs text-red-400" role="alert">
@@ -159,7 +247,13 @@ export default function App() {
       </div>
 
       <div>
-        <SectionHeader title="PROJECT SKILLS" count={projectSkills.length} />
+        <SectionHeader
+          title="PROJECT SKILLS"
+          count={projectSkills.length}
+          skills={projectSkills}
+          selected={selected}
+          onSelectSection={handleSelectSection}
+        />
         {projectSkills.length === 0 ? (
           <p className="italic text-gray-500">(none found)</p>
         ) : (
@@ -171,6 +265,8 @@ export default function App() {
                   onToggle={() => void handleToggle(skill)}
                   onDelete={() => handleDelete(skill)}
                   deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                  isSelected={selected.has(skill.id)}
+                  onSelect={() => handleSelect(skill.id)}
                 />
                 {rowErrors[skill.id] && (
                   <p className="px-4 text-xs text-red-400" role="alert">
@@ -183,6 +279,7 @@ export default function App() {
         )}
       </div>
 
+      {/* Single-skill delete confirmation */}
       {confirmSkill && (
         <ConfirmModal
           skill={confirmSkill}
@@ -190,6 +287,23 @@ export default function App() {
           onCancel={handleCancelDelete}
         />
       )}
+
+      {/* Bulk delete confirmation */}
+      {confirmBulk && (
+        <ConfirmModal
+          skills={confirmBulk}
+          onConfirm={() => void handleConfirmBulkDelete()}
+          onCancel={handleCancelBulkDelete}
+        />
+      )}
+
+      <BulkActionBar
+        count={selectedSkills.length}
+        selectedSkills={selectedSkills}
+        onDisable={() => void handleBulkDisable()}
+        onDelete={handleBulkDelete}
+        onClear={handleClearSelection}
+      />
     </div>
   )
 }
