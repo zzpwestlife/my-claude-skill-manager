@@ -5,17 +5,34 @@
   "scripts": {
     "start": "tsx src/index.tsx",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "web": "tsx web/server/index.ts",
+    "dev:web": "concurrently \"PORT=3001 tsx web/server/index.ts\" \"vite\"",
+    "build:web": "vite build",
+    "preview:web": "vite preview"
   },
   "dependencies": {
+    "express": "^4.18.0",
     "ink": "^4.4.1",
-    "react": "^18.2.0"
+    "open": "^10.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.0",
     "@types/node": "20.19.37",
     "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/supertest": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^8.0.0",
+    "postcss": "^8.4.0",
+    "supertest": "^6.3.0",
+    "tailwindcss": "^3.4.0",
     "tsx": "^4.7.0",
     "typescript": "5.9.3",
+    "vite": "^5.0.0",
     "vitest": "^1.4.0"
   }
 }
