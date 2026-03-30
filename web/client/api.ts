@@ -1,6 +1,8 @@
 import type { Skill } from '../../src/lib/types.js'
+import type { McpServer } from '../../src/lib/mcpTypes.js'
 
 export type { Skill }
+export type { McpServer }
 
 async function apiFetch(method: string, path: string): Promise<Response> {
   const res = await fetch(path, { method })
@@ -37,10 +39,6 @@ export async function disableSkill(id: string): Promise<void> {
 export async function deleteSkill(id: string): Promise<void> {
   await apiFetch('DELETE', `/api/skills/${encodeURIComponent(id)}`)
 }
-
-import type { McpServer } from '../../src/lib/mcpTypes.js'
-
-export type { McpServer }
 
 export async function fetchMcps(): Promise<McpServer[]> {
   const res = await apiFetch('GET', '/api/mcps')

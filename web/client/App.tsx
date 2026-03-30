@@ -268,141 +268,141 @@ export default function App() {
         <>
           <SearchBar value={search} onChange={setSearch} />
 
-      <div className="mb-8">
-        <SectionHeader
-          title="USER SKILLS"
-          skills={userSkills}
-          selected={selected}
-          onSelectSection={handleSelectSection}
-          collapsed={collapsed.has('user')}
-          onToggleCollapse={() => handleToggleCollapse('user')}
-        />
-        {!collapsed.has('user') && (
-          userSkills.length === 0 ? (
-            <p className="italic text-gray-500">(none found)</p>
-          ) : (
-            <div className="space-y-1">
-              {userSkills.map(skill => (
-                <div key={skill.id}>
-                  <SkillRow
-                    skill={skill}
-                    onToggle={() => void handleToggle(skill)}
-                    onDelete={() => handleDelete(skill)}
-                    deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
-                    isSelected={selected.has(skill.id)}
-                    onSelect={() => handleSelect(skill.id)}
-                  />
-                  {rowErrors[skill.id] && (
-                    <p className="px-4 text-xs text-red-400" role="alert">
-                      {rowErrors[skill.id]}
-                    </p>
-                  )}
+          <div className="mb-8">
+            <SectionHeader
+              title="USER SKILLS"
+              skills={userSkills}
+              selected={selected}
+              onSelectSection={handleSelectSection}
+              collapsed={collapsed.has('user')}
+              onToggleCollapse={() => handleToggleCollapse('user')}
+            />
+            {!collapsed.has('user') && (
+              userSkills.length === 0 ? (
+                <p className="italic text-gray-500">(none found)</p>
+              ) : (
+                <div className="space-y-1">
+                  {userSkills.map(skill => (
+                    <div key={skill.id}>
+                      <SkillRow
+                        skill={skill}
+                        onToggle={() => void handleToggle(skill)}
+                        onDelete={() => handleDelete(skill)}
+                        deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                        isSelected={selected.has(skill.id)}
+                        onSelect={() => handleSelect(skill.id)}
+                      />
+                      {rowErrors[skill.id] && (
+                        <p className="px-4 text-xs text-red-400" role="alert">
+                          {rowErrors[skill.id]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )
-        )}
-      </div>
+              )
+            )}
+          </div>
 
-      <div>
-        <SectionHeader
-          title="PROJECT SKILLS"
-          skills={projectSkills}
-          selected={selected}
-          onSelectSection={handleSelectSection}
-          hint={config?.projectRoot ?? undefined}
-          collapsed={collapsed.has('project')}
-          onToggleCollapse={() => handleToggleCollapse('project')}
-        />
-        {!collapsed.has('project') && (
-          projectSkills.length === 0 ? (
-            <p className="italic text-gray-500">(none found)</p>
-          ) : (
-            <div className="space-y-1">
-              {projectSkills.map(skill => (
-                <div key={skill.id}>
-                  <SkillRow
-                    skill={skill}
-                    onToggle={() => void handleToggle(skill)}
-                    onDelete={() => handleDelete(skill)}
-                    deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
-                    isSelected={selected.has(skill.id)}
-                    onSelect={() => handleSelect(skill.id)}
-                  />
-                  {rowErrors[skill.id] && (
-                    <p className="px-4 text-xs text-red-400" role="alert">
-                      {rowErrors[skill.id]}
-                    </p>
-                  )}
+          <div>
+            <SectionHeader
+              title="PROJECT SKILLS"
+              skills={projectSkills}
+              selected={selected}
+              onSelectSection={handleSelectSection}
+              hint={config?.projectRoot ?? undefined}
+              collapsed={collapsed.has('project')}
+              onToggleCollapse={() => handleToggleCollapse('project')}
+            />
+            {!collapsed.has('project') && (
+              projectSkills.length === 0 ? (
+                <p className="italic text-gray-500">(none found)</p>
+              ) : (
+                <div className="space-y-1">
+                  {projectSkills.map(skill => (
+                    <div key={skill.id}>
+                      <SkillRow
+                        skill={skill}
+                        onToggle={() => void handleToggle(skill)}
+                        onDelete={() => handleDelete(skill)}
+                        deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                        isSelected={selected.has(skill.id)}
+                        onSelect={() => handleSelect(skill.id)}
+                      />
+                      {rowErrors[skill.id] && (
+                        <p className="px-4 text-xs text-red-400" role="alert">
+                          {rowErrors[skill.id]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )
-        )}
-      </div>
+              )
+            )}
+          </div>
 
-      <div className="mt-8">
-        <SectionHeader
-          title="PLUGIN SKILLS"
-          skills={pluginSkills}
-          selected={selected}
-          onSelectSection={handleSelectSection}
-          collapsed={collapsed.has('plugin')}
-          onToggleCollapse={() => handleToggleCollapse('plugin')}
-        />
-        {!collapsed.has('plugin') && (
-          pluginSkills.length === 0 ? (
-            <p className="italic text-gray-500">(none found)</p>
-          ) : (
-            <div className="space-y-1">
-              {pluginSkills.map(skill => (
-                <div key={skill.id}>
-                  <SkillRow
-                    skill={skill}
-                    onToggle={() => void handleToggle(skill)}
-                    onDelete={() => handleDelete(skill)}
-                    deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
-                    isSelected={selected.has(skill.id)}
-                    onSelect={() => handleSelect(skill.id)}
-                  />
-                  {rowErrors[skill.id] && (
-                    <p className="px-4 text-xs text-red-400" role="alert">
-                      {rowErrors[skill.id]}
-                    </p>
-                  )}
+          <div className="mt-8">
+            <SectionHeader
+              title="PLUGIN SKILLS"
+              skills={pluginSkills}
+              selected={selected}
+              onSelectSection={handleSelectSection}
+              collapsed={collapsed.has('plugin')}
+              onToggleCollapse={() => handleToggleCollapse('plugin')}
+            />
+            {!collapsed.has('plugin') && (
+              pluginSkills.length === 0 ? (
+                <p className="italic text-gray-500">(none found)</p>
+              ) : (
+                <div className="space-y-1">
+                  {pluginSkills.map(skill => (
+                    <div key={skill.id}>
+                      <SkillRow
+                        skill={skill}
+                        onToggle={() => void handleToggle(skill)}
+                        onDelete={() => handleDelete(skill)}
+                        deleteButtonRef={(el) => { deleteButtonRefs.current[skill.id] = el }}
+                        isSelected={selected.has(skill.id)}
+                        onSelect={() => handleSelect(skill.id)}
+                      />
+                      {rowErrors[skill.id] && (
+                        <p className="px-4 text-xs text-red-400" role="alert">
+                          {rowErrors[skill.id]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )
-        )}
-      </div>
+              )
+            )}
+          </div>
 
-      {/* Single-skill delete confirmation */}
-      {confirmSkill && (
-        <ConfirmModal
-          skill={confirmSkill}
-          onConfirm={() => void handleConfirmDelete()}
-          onCancel={handleCancelDelete}
-        />
-      )}
+          {/* Single-skill delete confirmation */}
+          {confirmSkill && (
+            <ConfirmModal
+              skill={confirmSkill}
+              onConfirm={() => void handleConfirmDelete()}
+              onCancel={handleCancelDelete}
+            />
+          )}
 
-      {/* Bulk delete confirmation */}
-      {confirmBulk && (
-        <ConfirmModal
-          skills={confirmBulk}
-          onConfirm={() => void handleConfirmBulkDelete()}
-          onCancel={handleCancelBulkDelete}
-        />
-      )}
+          {/* Bulk delete confirmation */}
+          {confirmBulk && (
+            <ConfirmModal
+              skills={confirmBulk}
+              onConfirm={() => void handleConfirmBulkDelete()}
+              onCancel={handleCancelBulkDelete}
+            />
+          )}
 
-      <BulkActionBar
-        count={selectedSkills.length}
-        selectedSkills={selectedSkills}
-        onEnable={() => void handleBulkEnable()}
-        onDisable={() => void handleBulkDisable()}
-        onDelete={handleBulkDelete}
-        onClear={handleClearSelection}
-      />
+          <BulkActionBar
+            count={selectedSkills.length}
+            selectedSkills={selectedSkills}
+            onEnable={() => void handleBulkEnable()}
+            onDisable={() => void handleBulkDisable()}
+            onDelete={handleBulkDelete}
+            onClear={handleClearSelection}
+          />
         </>
       ) : (
         <McpPage />
