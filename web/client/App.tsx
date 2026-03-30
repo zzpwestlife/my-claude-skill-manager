@@ -14,6 +14,7 @@ import SkillRow from './components/SkillRow.js'
 import ConfirmModal from './components/ConfirmModal.js'
 import BulkActionBar from './components/BulkActionBar.js'
 import McpPage from './McpPage.js'
+import HookPage from './HookPage.js'
 import type { SelectableItem } from '../../src/lib/types.js'
 
 export default function App() {
@@ -27,7 +28,7 @@ export default function App() {
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({})
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-  const [currentTab, setCurrentTab] = useState<'skills' | 'mcp'>('skills')
+  const [currentTab, setCurrentTab] = useState<'skills' | 'mcp' | 'hooks'>('skills')
 
   function handleToggleCollapse(section: string) {
     setCollapsed(prev => {
@@ -261,6 +262,16 @@ export default function App() {
           >
             MCP
           </button>
+          <button
+            onClick={() => setCurrentTab('hooks')}
+            className={`rounded px-4 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              currentTab === 'hooks'
+                ? 'bg-gray-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Hooks
+          </button>
         </div>
       </div>
 
@@ -404,8 +415,10 @@ export default function App() {
             onClear={handleClearSelection}
           />
         </>
-      ) : (
+      ) : currentTab === 'mcp' ? (
         <McpPage />
+      ) : (
+        <HookPage />
       )}
     </div>
   )
