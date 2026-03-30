@@ -1,7 +1,7 @@
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import open from 'open'
 import express from 'express'
 import { createApp } from './app.js'
@@ -19,10 +19,27 @@ const projectSkillsDir = join(projectRoot, '.claude', 'skills')
 const pluginsDir = join(homedir(), '.claude', 'plugins')
 const userMcpFile = join(homedir(), '.claude.json')
 const projectMcpFile = join(projectRoot, '.claude', 'mcp.json')
-const userSettingsFile = join(homedir(), '.claude', 'settings.json')
-const projectSettingsFile = join(projectRoot, '.claude', 'settings.json')
+// Collect all *settings*.json from ~/.claude/ (e.g. settings.json, ft-settings.json, settings.local.json)
+const claudeDir = join(homedir(), '.claude')
+const userSettingsFiles: string[] = []
+try {
+  for (const f of readdirSync(claudeDir)) {
+    if (f.endsWith('.json') && f.includes('settings')) {
+      userSettingsFiles.push(join(claudeDir, f))
+    }
+  }
+} catch { /* dir missing */ }
+// ~/.claude.json may also contain hooks
+const dotClaudeJson = join(homedir(), '.claude.json')
+if (existsSync(dotClaudeJson)) userSettingsFiles.push(dotClaudeJson)
 
-const app = createApp(userSkillsDir, projectSkillsDir, projectRoot, pluginsDir, userMcpFile, projectMcpFile, userSettingsFile, projectSettingsFile)
+// Project: settings.json + settings.local.json
+const projectSettingsFiles: string[] = [
+  join(projectRoot, '.claude', 'settings.json'),
+  join(projectRoot, '.claude', 'settings.local.json'),
+]
+
+const app = createApp(userSkillsDir, projectSkillsDir, projectRoot, pluginsDir, userMcpFile, projectMcpFile, userSettingsFiles, projectSettingsFiles)
 
 // Serve built frontend in production (when dist/web/ exists)
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -42,7 +59,7 @@ app.listen(PORT, () => {
   console.log(`  User skills:    ${userSkillsDir}`)
   console.log(`  Project root:   ${projectRoot}${existsSync(projectSkillsDir) ? '' : '  (no .claude/skills found)'}`)
   console.log(`  User MCP:       ${userMcpFile}`)
-  console.log(`  User settings:  ${userSettingsFile}`)
+  console.log(`  User settings:  ${userSettingsFiles.join(', ')}`)
   // Only auto-open when running as main web server (not as API-only in dev mode)
   if (!process.env.PORT) {
     void open(url)

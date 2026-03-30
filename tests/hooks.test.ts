@@ -22,13 +22,13 @@ describe('scanHooks', () => {
   })
 
   it('returns empty array when settings file does not exist', async () => {
-    const result = await scanHooks('/nonexistent/settings.json', null)
+    const result = await scanHooks(['/nonexistent/settings.json'], [])
     expect(result).toEqual([])
   })
 
   it('returns empty array when settings.json has no hooks key', async () => {
     await writeFile(userFile, JSON.stringify({ permissions: [] }))
-    const result = await scanHooks(userFile, null)
+    const result = await scanHooks([userFile], [])
     expect(result).toEqual([])
   })
 
@@ -43,10 +43,10 @@ describe('scanHooks', () => {
         ],
       },
     }))
-    const result = await scanHooks(userFile, null)
+    const result = await scanHooks([userFile], [])
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
-      id: 'user:PreToolUse:0:0',
+      id: 'user:settings:PreToolUse:0:0',
       scope: 'user',
       event: 'PreToolUse',
       matcher: 'Bash',
@@ -68,7 +68,7 @@ describe('scanHooks', () => {
         ],
       },
     }))
-    const result = await scanHooks(userFile, null)
+    const result = await scanHooks([userFile], [])
     expect(result).toHaveLength(1)
     expect(result[0].enabled).toBe(false)
     expect(result[0].matcher).toBe('')
@@ -92,11 +92,11 @@ describe('scanHooks', () => {
         ],
       },
     }))
-    const result = await scanHooks(userFile, null)
+    const result = await scanHooks([userFile], [])
     expect(result).toHaveLength(3)
-    expect(result[0]).toMatchObject({ id: 'user:PreToolUse:0:0', command: 'echo a' })
-    expect(result[1]).toMatchObject({ id: 'user:PreToolUse:0:1', command: 'echo b' })
-    expect(result[2]).toMatchObject({ id: 'user:PreToolUse:1:0', command: 'echo c' })
+    expect(result[0]).toMatchObject({ id: 'user:settings:PreToolUse:0:0', command: 'echo a' })
+    expect(result[1]).toMatchObject({ id: 'user:settings:PreToolUse:0:1', command: 'echo b' })
+    expect(result[2]).toMatchObject({ id: 'user:settings:PreToolUse:1:0', command: 'echo c' })
   })
 
   it('handles multiple event types', async () => {
@@ -106,7 +106,7 @@ describe('scanHooks', () => {
         Stop: [{ hooks: [{ command: 'echo stop' }] }],
       },
     }))
-    const result = await scanHooks(userFile, null)
+    const result = await scanHooks([userFile], [])
     expect(result).toHaveLength(2)
     expect(result.some(h => h.event === 'PreToolUse')).toBe(true)
     expect(result.some(h => h.event === 'Stop')).toBe(true)
@@ -120,14 +120,28 @@ describe('scanHooks', () => {
     await writeFile(projectFile, JSON.stringify({
       hooks: { Stop: [{ hooks: [{ command: 'echo proj-stop' }] }] },
     }))
-    const result = await scanHooks(userFile, projectFile)
+    const result = await scanHooks([userFile], [projectFile])
     expect(result.some(h => h.scope === 'user' && h.command === 'echo user-stop')).toBe(true)
     expect(result.some(h => h.scope === 'project' && h.command === 'echo proj-stop')).toBe(true)
   })
 
+  it('merges hooks from multiple user files with unique ids', async () => {
+    const userFile2 = join(tmpRoot, 'ft-settings.json')
+    await writeFile(userFile, JSON.stringify({
+      hooks: { Stop: [{ hooks: [{ command: 'echo from-settings' }] }] },
+    }))
+    await writeFile(userFile2, JSON.stringify({
+      hooks: { Stop: [{ hooks: [{ command: 'echo from-ft' }] }] },
+    }))
+    const result = await scanHooks([userFile, userFile2], [])
+    expect(result).toHaveLength(2)
+    expect(result[0].id).toBe('user:settings:Stop:0:0')
+    expect(result[1].id).toBe('user:ft-settings:Stop:0:0')
+  })
+
   it('handles malformed JSON gracefully', async () => {
     await writeFile(userFile, 'NOT JSON')
-    const result = await scanHooks(userFile, null)
+    const result = await scanHooks([userFile], [])
     expect(result).toEqual([])
   })
 })
@@ -147,7 +161,7 @@ describe('Hook actions', () => {
 
   function makeHook(overrides: Partial<import('../src/lib/hookTypes.js').Hook> = {}): import('../src/lib/hookTypes.js').Hook {
     return {
-      id: 'user:PreToolUse:0:0',
+      id: 'user:settings:PreToolUse:0:0',
       scope: 'user',
       event: 'PreToolUse',
       matcher: 'Bash',
@@ -266,8 +280,8 @@ describe('Hooks API routes', () => {
   })
 
   describe('GET /api/hooks', () => {
-    it('returns empty array when settings file does not exist', async () => {
-      const app = createApp('', null, undefined, undefined, undefined, null, '/nonexistent/settings.json', null)
+    it('returns empty array when no settings files given', async () => {
+      const app = createApp('', null, undefined, undefined, undefined, null, [], [])
       const res = await request(app).get('/api/hooks')
       expect(res.status).toBe(200)
       expect(res.body).toEqual([])
@@ -279,7 +293,7 @@ describe('Hooks API routes', () => {
           Stop: [{ hooks: [{ type: 'command', command: 'echo done' }] }],
         },
       }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
       const res = await request(app).get('/api/hooks')
       expect(res.status).toBe(200)
       expect(res.body).toHaveLength(1)
@@ -296,8 +310,8 @@ describe('Hooks API routes', () => {
           ],
         },
       }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
-      const res = await request(app).patch('/api/hooks/user%3APreToolUse%3A0%3A0/disable')
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
+      const res = await request(app).patch('/api/hooks/user%3Asettings%3APreToolUse%3A0%3A0/disable')
       expect(res.status).toBe(200)
       expect(res.body).toEqual({ ok: true })
       const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
@@ -306,8 +320,8 @@ describe('Hooks API routes', () => {
 
     it('returns 404 when hook not found', async () => {
       await writeFile(settingsFile, JSON.stringify({ hooks: {} }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
-      const res = await request(app).patch('/api/hooks/user%3APreToolUse%3A0%3A0/disable')
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
+      const res = await request(app).patch('/api/hooks/user%3Asettings%3APreToolUse%3A0%3A0/disable')
       expect(res.status).toBe(404)
     })
 
@@ -319,8 +333,8 @@ describe('Hooks API routes', () => {
           ],
         },
       }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
-      const res = await request(app).patch('/api/hooks/user%3APreToolUse%3A0%3A0/disable')
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
+      const res = await request(app).patch('/api/hooks/user%3Asettings%3APreToolUse%3A0%3A0/disable')
       expect(res.status).toBe(409)
     })
   })
@@ -332,8 +346,8 @@ describe('Hooks API routes', () => {
           Stop: [{ hooks: [{ command: 'echo hi', disabled: true }] }],
         },
       }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
-      const res = await request(app).patch('/api/hooks/user%3AStop%3A0%3A0/enable')
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
+      const res = await request(app).patch('/api/hooks/user%3Asettings%3AStop%3A0%3A0/enable')
       expect(res.status).toBe(200)
       const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
       expect(json.hooks.Stop[0].hooks[0].disabled).toBeUndefined()
@@ -345,8 +359,8 @@ describe('Hooks API routes', () => {
           Stop: [{ hooks: [{ command: 'echo hi' }] }],
         },
       }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
-      const res = await request(app).patch('/api/hooks/user%3AStop%3A0%3A0/enable')
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
+      const res = await request(app).patch('/api/hooks/user%3Asettings%3AStop%3A0%3A0/enable')
       expect(res.status).toBe(409)
     })
   })
@@ -358,8 +372,8 @@ describe('Hooks API routes', () => {
           Stop: [{ hooks: [{ command: 'echo bye' }] }],
         },
       }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
-      const res = await request(app).delete('/api/hooks/user%3AStop%3A0%3A0')
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
+      const res = await request(app).delete('/api/hooks/user%3Asettings%3AStop%3A0%3A0')
       expect(res.status).toBe(200)
       const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
       expect(json.hooks?.Stop).toBeUndefined()
@@ -367,8 +381,8 @@ describe('Hooks API routes', () => {
 
     it('returns 404 when hook not found', async () => {
       await writeFile(settingsFile, JSON.stringify({ hooks: {} }))
-      const app = createApp('', null, undefined, undefined, undefined, null, settingsFile, null)
-      const res = await request(app).delete('/api/hooks/user%3AStop%3A9%3A9')
+      const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])
+      const res = await request(app).delete('/api/hooks/user%3Asettings%3AStop%3A9%3A9')
       expect(res.status).toBe(404)
     })
   })

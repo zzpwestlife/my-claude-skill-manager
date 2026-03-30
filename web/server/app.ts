@@ -13,8 +13,8 @@ export function createApp(
   pluginsDir?: string,
   userMcpFile?: string,
   projectMcpFile?: string | null,
-  userSettingsFile?: string,
-  projectSettingsFile?: string | null,
+  userSettingsFiles?: string[],
+  projectSettingsFiles?: string[],
 ) {
   const app = express()
 
@@ -151,9 +151,9 @@ export function createApp(
   // ── Hook routes ─────────────────────────────────────────────────────────────
 
   app.get('/api/hooks', async (_req, res) => {
-    if (!userSettingsFile) { res.json([]); return }
+    if (!userSettingsFiles?.length) { res.json([]); return }
     try {
-      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      const hooks = await scanHooks(userSettingsFiles ?? [], projectSettingsFiles ?? [])
       res.json(hooks)
     } catch (err) {
       res.status(500).json({ error: String(err) })
@@ -161,10 +161,10 @@ export function createApp(
   })
 
   app.patch('/api/hooks/:id/enable', async (req, res) => {
-    if (!userSettingsFile) { res.status(404).json({ error: 'No settings file' }); return }
+    if (!userSettingsFiles?.length) { res.status(404).json({ error: 'No settings file' }); return }
     const id = req.params.id
     try {
-      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      const hooks = await scanHooks(userSettingsFiles ?? [], projectSettingsFiles ?? [])
       const hook = hooks.find(h => h.id === id)
       if (!hook) { res.status(404).json({ error: `Hook not found: ${id}` }); return }
       if (hook.enabled) {
@@ -179,10 +179,10 @@ export function createApp(
   })
 
   app.patch('/api/hooks/:id/disable', async (req, res) => {
-    if (!userSettingsFile) { res.status(404).json({ error: 'No settings file' }); return }
+    if (!userSettingsFiles?.length) { res.status(404).json({ error: 'No settings file' }); return }
     const id = req.params.id
     try {
-      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      const hooks = await scanHooks(userSettingsFiles ?? [], projectSettingsFiles ?? [])
       const hook = hooks.find(h => h.id === id)
       if (!hook) { res.status(404).json({ error: `Hook not found: ${id}` }); return }
       if (!hook.enabled) {
@@ -197,10 +197,10 @@ export function createApp(
   })
 
   app.delete('/api/hooks/:id', async (req, res) => {
-    if (!userSettingsFile) { res.status(404).json({ error: 'No settings file' }); return }
+    if (!userSettingsFiles?.length) { res.status(404).json({ error: 'No settings file' }); return }
     const id = req.params.id
     try {
-      const hooks = await scanHooks(userSettingsFile, projectSettingsFile ?? null)
+      const hooks = await scanHooks(userSettingsFiles ?? [], projectSettingsFiles ?? [])
       const hook = hooks.find(h => h.id === id)
       if (!hook) { res.status(404).json({ error: `Hook not found: ${id}` }); return }
       await deleteHook(hook)
