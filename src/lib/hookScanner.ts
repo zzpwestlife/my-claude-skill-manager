@@ -29,13 +29,14 @@ function parseHooks(json: SettingsJson, scope: HookScope, configFile: string): H
       const hookEntries = matcherEntry.hooks ?? []
 
       hookEntries.forEach((hookEntry, hookIndex) => {
+        const isActuallyDisabled = hookEntry.disabled === true || hookEntry.type === 'disabled_command'
         hooks.push({
           id: `${scope}:${fk}:${eventName}:${matcherIndex}:${hookIndex}`,
           scope,
           event: eventName,
           matcher,
           command: hookEntry.command,
-          enabled: hookEntry.disabled !== true,
+          enabled: !isActuallyDisabled,
           configFile,
           matcherIndex,
           hookIndex,

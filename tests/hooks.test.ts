@@ -58,20 +58,23 @@ describe('scanHooks', () => {
     })
   })
 
-  it('returns enabled:false when hook has disabled:true', async () => {
+  it('returns enabled:false when hook has disabled:true or type is disabled_command', async () => {
     await writeFile(userFile, JSON.stringify({
       hooks: {
         Stop: [
           {
-            hooks: [{ type: 'command', command: '/notify.sh', disabled: true }],
+            hooks: [
+              { type: 'command', command: '/notify1.sh', disabled: true },
+              { type: 'disabled_command', command: '/notify2.sh' },
+            ],
           },
         ],
       },
     }))
     const result = await scanHooks([userFile], [])
-    expect(result).toHaveLength(1)
+    expect(result).toHaveLength(2)
     expect(result[0].enabled).toBe(false)
-    expect(result[0].matcher).toBe('')
+    expect(result[1].enabled).toBe(false)
   })
 
   it('handles multiple matchers and multiple hooks per matcher', async () => {
@@ -174,7 +177,7 @@ describe('Hook actions', () => {
     }
   }
 
-  it('disableHook adds disabled:true to the hook entry', async () => {
+  it('disableHook adds disabled:true and changes type to disabled_command', async () => {
     await writeFile(settingsFile, JSON.stringify({
       hooks: {
         PreToolUse: [
@@ -185,15 +188,16 @@ describe('Hook actions', () => {
     await disableHook(makeHook())
     const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
     expect(json.hooks.PreToolUse[0].hooks[0].disabled).toBe(true)
+    expect(json.hooks.PreToolUse[0].hooks[0].type).toBe('disabled_command')
   })
 
-  it('enableHook removes disabled field from hook entry', async () => {
+  it('enableHook removes disabled field and restores type to command', async () => {
     await writeFile(settingsFile, JSON.stringify({
       hooks: {
         PreToolUse: [
           {
             matcher: 'Bash',
-            hooks: [{ type: 'command', command: 'echo hi', disabled: true }],
+            hooks: [{ type: 'disabled_command', command: 'echo hi', disabled: true }],
           },
         ],
       },
@@ -201,6 +205,7 @@ describe('Hook actions', () => {
     await enableHook(makeHook({ enabled: false }))
     const json = JSON.parse(await readFile(settingsFile, 'utf-8'))
     expect(json.hooks.PreToolUse[0].hooks[0].disabled).toBeUndefined()
+    expect(json.hooks.PreToolUse[0].hooks[0].type).toBe('command')
   })
 
   it('deleteHook removes the hook entry — empty hooks array cleans up matcher and event', async () => {
@@ -329,7 +334,7 @@ describe('Hooks API routes', () => {
       await writeFile(settingsFile, JSON.stringify({
         hooks: {
           PreToolUse: [
-            { matcher: 'Bash', hooks: [{ command: 'echo hi', disabled: true }] },
+            { matcher: 'Bash', hooks: [{ type: 'disabled_command', command: 'echo hi', disabled: true }] },
           ],
         },
       }))
@@ -343,7 +348,7 @@ describe('Hooks API routes', () => {
     it('enables a disabled hook', async () => {
       await writeFile(settingsFile, JSON.stringify({
         hooks: {
-          Stop: [{ hooks: [{ command: 'echo hi', disabled: true }] }],
+          Stop: [{ hooks: [{ type: 'disabled_command', command: 'echo hi', disabled: true }] }],
         },
       }))
       const app = createApp('', null, undefined, undefined, undefined, null, [settingsFile], [])

@@ -15,7 +15,7 @@ Claude Code Skills 和 MCP 服务器的可视化管理工具 —— 在浏览器
 ```bash
 git clone <repo-url>
 cd skill-manager
-npm install && npm run build:web && npm link
+make install
 ```
 
 之后在任意目录使用：

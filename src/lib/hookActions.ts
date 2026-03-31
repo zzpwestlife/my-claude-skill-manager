@@ -22,6 +22,9 @@ export async function enableHook(hook: Hook): Promise<void> {
   const entry = getEntry(json, hook)
   if (!entry) return
   delete entry.disabled
+  if (entry.type === 'disabled_command') {
+    entry.type = 'command'
+  }
   await writeSettingsJson(hook.configFile, json)
 }
 
@@ -30,6 +33,7 @@ export async function disableHook(hook: Hook): Promise<void> {
   const entry = getEntry(json, hook)
   if (!entry) return
   entry.disabled = true
+  entry.type = 'disabled_command'
   await writeSettingsJson(hook.configFile, json)
 }
 

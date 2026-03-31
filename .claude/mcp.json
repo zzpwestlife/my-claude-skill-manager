@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "local-fetcher": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp"
+    },
+    "sqlite-explorer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sqlite",
+        "--db",
+        "example.db"
+      ],
+      "env": {
+        "DEBUG": "1"
+      }
+    }
+  },
+  "_disabledMcpServers": {
+    "legacy-db": {
+      "command": "node",
+      "args": [
+        "./legacy-db-mcp.js"
+      ]
+    }
+  }
+}

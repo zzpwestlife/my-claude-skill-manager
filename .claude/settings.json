@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": ["Bash(*)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '即将执行 Bash 命令，注意安全...'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '准备修改文件...'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Claude Code 任务结束！'"
+          }
+        ]
+      }
+    ]
+  }
+}
